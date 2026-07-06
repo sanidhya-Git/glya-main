@@ -66,10 +66,11 @@ function buildBreadcrumb(col: string, cat: string, metal: string, gem: string): 
 function dp(val: string | null): string { return val ? decodeURIComponent(val.replace(/\+/g, ' ')) : ''; }
 
 function BrowseContent() {
-  const searchParams  = useSearchParams();
-  const goldRate      = useStore(s => s.goldRate);
-  const adminProducts = useStore(s => s.adminProducts);
-  const products      = adminProducts.length > 0 ? adminProducts : catalog;
+  const searchParams    = useSearchParams();
+  const goldRate        = useStore(s => s.goldRate);
+  const adminProducts   = useStore(s => s.adminProducts);
+  const adminCategories = useStore(s => s.adminCategories);
+  const products        = adminProducts.length > 0 ? adminProducts : catalog;
 
   /* read all URL params on init */
   const urlCol   = dp(searchParams.get('col'));
@@ -167,16 +168,17 @@ function BrowseContent() {
         </div>
       </div>
 
-      {/* Sub-categories (only when a collection is selected) */}
-      {catList.length > 0 && (
+      {/* Categories from admin OR sub-categories when collection selected */}
+      {(catList.length > 0 || adminCategories.length > 0) && (
         <div>
           <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Category</div>
           <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
             <div onClick={() => setActiveCat('')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:!activeCat?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCat?500:400 }}>All</div>
-            {catList.map(c => (
+            {(catList.length > 0 ? catList : adminCategories).map(c => (
               <div key={c} onClick={() => setActiveCat(c)}
-                style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeCat===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400 }}>
-                {c}
+                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', fontSize:13, color:activeCat===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400 }}>
+                <span>{c}</span>
+                <span style={{ fontSize:11.5, color:'var(--muted)' }}>{products.filter(p => p.cat === c).length || ''}</span>
               </div>
             ))}
           </div>

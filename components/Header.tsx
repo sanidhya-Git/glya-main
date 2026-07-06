@@ -176,12 +176,15 @@ export default function Header() {
   const [scrolled,   setScrolled]   = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const cart      = useStore(s => s.cart);
-  const wishlist  = useStore(s => s.wishlist);
-  const cartCount = cart.reduce((a, b) => a + b.qty, 0);
+  const cart            = useStore(s => s.cart);
+  const wishlist        = useStore(s => s.wishlist);
+  const adminProducts   = useStore(s => s.adminProducts);
+  const adminCategories = useStore(s => s.adminCategories);
+  const cartCount       = cart.reduce((a, b) => a + b.qty, 0);
+  const allProducts     = adminProducts.length > 0 ? adminProducts : catalog;
 
   const suggestions = search.trim().length > 1
-    ? catalog.filter(p =>
+    ? allProducts.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.col.toLowerCase().includes(search.toLowerCase()) ||
         p.cat.toLowerCase().includes(search.toLowerCase())
@@ -687,6 +690,28 @@ export default function Header() {
                 )}
               </div>
             ))}
+
+            {/* Admin categories in mobile menu */}
+            {adminCategories.length > 0 && (
+              <div className="gh-mob-ni">
+                <div className="gh-mob-top" onClick={() => toggleMob('Categories')}>
+                  <span className="gh-mob-lbl">Categories</span>
+                  <span className={`gh-mob-cv${mobOpen.has('Categories') ? ' open' : ''}`}><IconChevron /></span>
+                </div>
+                <div className={`gh-mob-panel${mobOpen.has('Categories') ? ' open' : ''}`}>
+                  {adminCategories.map(cat => (
+                    <Link key={cat} href={`/browse?cat=${encodeURIComponent(cat)}`} className="gh-mob-sub" onClick={() => setMenuOpen(false)}>
+                      <span>{cat}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color:'var(--gold)', flexShrink:0 }}><polyline points="9 18 15 12 9 6"/></svg>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Link href="/journal" className="gh-mob-plain" onClick={() => setMenuOpen(false)}>Journal</Link>
+            <Link href="/about"   className="gh-mob-plain" onClick={() => setMenuOpen(false)}>About</Link>
+            <Link href="/contact" className="gh-mob-plain" onClick={() => setMenuOpen(false)}>Contact</Link>
           </div>
 
           <div className="gh-mob-utils">

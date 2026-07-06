@@ -90,6 +90,9 @@ interface GlyaStore {
 
   adminJournal: AdminPost[];
   setAdminJournal: (posts: AdminPost[]) => void;
+
+  adminCategories: string[];
+  setAdminCategories: (cats: string[]) => void;
 }
 
 export const useStore = create<GlyaStore>()(
@@ -157,6 +160,9 @@ export const useStore = create<GlyaStore>()(
 
       adminJournal: [],
       setAdminJournal: (posts) => set({ adminJournal: posts }),
+
+      adminCategories: [],
+      setAdminCategories: (cats) => set({ adminCategories: cats }),
     }),
     {
       name: 'glya-store',

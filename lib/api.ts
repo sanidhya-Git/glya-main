@@ -109,6 +109,16 @@ export async function fetchAdminJournal(): Promise<AdminPost[]> {
   }
 }
 
+export async function fetchAdminCategories(): Promise<string[]> {
+  try {
+    const res = await fetch(`${BASE}/api/categories`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 export interface AdminOrderPayload {
   no: string;
   customer: string;

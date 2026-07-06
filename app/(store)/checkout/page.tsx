@@ -20,7 +20,9 @@ const payMethods = [
 
 export default function CheckoutPage() {
   const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock } = useStore();
-  const goldRate = useStore(s => s.goldRate);
+  const goldRate      = useStore(s => s.goldRate);
+  const adminProducts = useStore(s => s.adminProducts);
+  const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
   const [step,      setStep]      = useState(1);
   const [shipIdx,   setShipIdx]   = useState(0);
   const [payMethod, setPayMethod] = useState(0);
@@ -30,7 +32,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({ first:'', last:'', email:'', mobile:'', addr1:'', addr2:'', pin:'', city:'', state:'' });
 
   const items = cart.map(it => {
-    const p  = catalog.find(x => x.id === it.id)!;
+    const p  = allProducts.find(x => x.id === it.id) || catalog.find(x => x.id === it.id)!;
     const pr = priceOf(p, it.karat, goldRate);
     return {
       ...it, p,
@@ -39,7 +41,7 @@ export default function CheckoutPage() {
       unitPrice:  pr.total,
       metalLabel: it.karat === 'PT950' ? 'Platinum 950' : it.karat + ' Gold',
     };
-  });
+  }).filter(it => it.p);
 
   const subtotal  = items.reduce((a, b) => a + b.lineNum, 0);
   let   discount  = 0;

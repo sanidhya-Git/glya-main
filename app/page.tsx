@@ -1,14 +1,16 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/lib/store';
-import { catalog, priceOf, inr } from '@/lib/catalog';
+import { catalog } from '@/lib/catalog';
 import GoldRateProvider from '@/components/GoldRateProvider';
+import DataProvider from '@/components/DataProvider';
 import PromoBar from '@/components/PromoBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 
-const CATS = [
+const DEFAULT_CATS = [
   { name: 'Rings',        icon: '◉', href: '/browse?cat=Rings' },
   { name: 'Necklaces',    icon: '◈', href: '/browse?cat=Necklaces' },
   { name: 'Bangles',      icon: '○', href: '/browse?cat=Bangles' },
@@ -17,44 +19,86 @@ const CATS = [
   { name: 'New arrivals', icon: '▲', href: '/browse?tag=New' },
 ];
 
-const PLATINUM_RATE = 3380;
+const ICONS = ['◉','◈','○','◎','✦','▲','◇','⬡','◐','◑'];
 
 export default function Home() {
-  const goldRate = useStore(s => s.goldRate);
-  const trending = catalog.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
-  const newArr   = catalog.filter(p => p.tag === 'New').slice(0, 4);
-  const r22      = Math.round(goldRate * 0.916);
-  const r18      = Math.round(goldRate * 0.75);
+  const goldRate        = useStore(s => s.goldRate);
+  const adminProducts   = useStore(s => s.adminProducts);
+  const adminJournal    = useStore(s => s.adminJournal);
+  const adminCategories = useStore(s => s.adminCategories);
+
+  const products  = adminProducts.length > 0 ? adminProducts : catalog;
+  const trending  = products.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
+  const newArr    = products.filter(p => p.tag === 'New').slice(0, 4);
+  const featured  = products.filter(p => (p as any).featured || p.tag === 'Bestseller').slice(0, 4);
+
+  const cats = adminCategories.length > 0
+    ? adminCategories.map((name, i) => ({ name, icon: ICONS[i % ICONS.length], href: `/browse?cat=${encodeURIComponent(name)}` }))
+    : DEFAULT_CATS;
+
+  const blogs = adminJournal.filter(p => p.status === 'Published').slice(0, 3);
 
   return (
     <>
       <style>{`
-        .home-editorial { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); border:1px solid var(--line); overflow:hidden; }
-        .home-editorial-img { background:#2F4A3F; min-height:320px; display:flex; align-items:center; justify-content:center; }
+        .home-editorial { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); overflow:hidden; border-radius:4px; }
+        .home-editorial-img { background:#2F4A3F; min-height:340px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
         .home-editorial-text { padding:clamp(28px,5vw,56px) clamp(22px,4vw,48px); display:flex; flex-direction:column; justify-content:center; }
-        .home-price-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+        .trust-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); }
+        .trust-item { padding:clamp(16px,2.5vw,28px) clamp(12px,2vw,22px); text-align:center; border-right:1px solid var(--line); }
+        .trust-item:last-child { border-right:none; }
+        .blog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px); }
+        @media(max-width:900px){
+          .home-editorial { grid-template-columns:1fr; }
+          .home-editorial-img { min-height:240px; }
+          .trust-grid { grid-template-columns:repeat(2,1fr); }
+          .trust-item:nth-child(2) { border-right:none; }
+          .trust-item:nth-child(3) { border-top:1px solid var(--line); }
+          .trust-item:nth-child(4) { border-top:1px solid var(--line); border-right:none; }
+          .blog-grid { grid-template-columns:1fr; }
+        }
+        @media(max-width:600px){
+          .trust-grid { grid-template-columns:1fr 1fr; }
+        }
       `}</style>
       <GoldRateProvider />
+      <DataProvider />
       <PromoBar />
       <Header />
 
       <main style={{ background:'var(--paper)', minHeight:'calc(100vh - 120px)' }}>
 
         {/* ── HERO ── */}
-        <section style={{ height:'88vh', minHeight:480, background:'#211C17', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px', position:'relative', overflow:'hidden' }}>
+        <section style={{ height:'90vh', minHeight:500, background:'#211C17', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 clamp(20px,5vw,60px)', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 60% 40%, rgba(176,141,87,0.18) 0%, transparent 62%)', pointerEvents:'none' }} />
           <p style={{ fontSize:11, letterSpacing:'0.22em', textTransform:'uppercase', color:'#B08D57', position:'relative' }}>Fine jewellery · since 2019</p>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(40px,7vw,96px)', color:'#EDE6D8', lineHeight:1.0, marginTop:18, maxWidth:800, fontWeight:400, position:'relative' }}>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(44px,8vw,100px)', color:'#EDE6D8', lineHeight:1.0, marginTop:18, maxWidth:800, fontWeight:400, position:'relative' }}>
             Where gold<br />meets <em style={{ fontStyle:'italic', color:'#B08D57' }}>art</em>
           </h1>
-          <p style={{ color:'#9E958A', fontSize:15, marginTop:22, maxWidth:420, lineHeight:1.7, position:'relative' }}>
+          <p style={{ color:'#9E958A', fontSize:'clamp(14px,1.5vw,16px)', marginTop:22, maxWidth:420, lineHeight:1.7, position:'relative' }}>
             Each piece designed in our Pune atelier. Hallmarked, certified, and made to become your heirloom.
           </p>
-          <div style={{ display:'flex', gap:14, marginTop:34, flexWrap:'wrap', justifyContent:'center', position:'relative' }}>
-            <Link href="/browse" style={{ display:'inline-block', padding:'13px 32px', background:'#B08D57', color:'#211C17', fontSize:13, letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:600, textDecoration:'none' }}>Shop the collection</Link>
-            <Link href="/browse?col=Bridal" style={{ display:'inline-block', padding:'13px 32px', border:'1px solid rgba(237,230,216,0.28)', color:'#EDE6D8', fontSize:13, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none' }}>Bridal edit</Link>
+          <div style={{ display:'flex', gap:14, marginTop:36, flexWrap:'wrap', justifyContent:'center', position:'relative' }}>
+            <Link href="/browse" style={{ display:'inline-block', padding:'14px 36px', background:'#B08D57', color:'#211C17', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, textDecoration:'none', borderRadius:2 }}>Shop the collection</Link>
+            <Link href="/browse?col=Bridal" style={{ display:'inline-block', padding:'14px 36px', border:'1px solid rgba(237,230,216,0.28)', color:'#EDE6D8', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', textDecoration:'none', borderRadius:2 }}>Bridal edit</Link>
           </div>
         </section>
+
+        {/* ── TRUST BAND ── */}
+        <div className="trust-grid" style={{ maxWidth:1180, margin:'0 auto', marginTop:'clamp(32px,5vw,56px)', marginLeft:'clamp(16px,3vw,auto)', marginRight:'clamp(16px,3vw,auto)' }}>
+          {[
+            { icon:'◈', label:'BIS Hallmarked', sub:'Every piece certified' },
+            { icon:'↺', label:'30-Day Returns',  sub:'Free & insured' },
+            { icon:'∞', label:'Lifetime Exchange',sub:'Buyback guaranteed' },
+            { icon:'▲', label:'Free Shipping',   sub:'Pan India, insured' },
+          ].map(t => (
+            <div key={t.icon} className="trust-item">
+              <div style={{ fontSize:22, color:'var(--gold)' }}>{t.icon}</div>
+              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17, marginTop:8 }}>{t.label}</div>
+              <div style={{ fontSize:12, color:'var(--muted)', marginTop:4 }}>{t.sub}</div>
+            </div>
+          ))}
+        </div>
 
         {/* ── CATEGORIES ── */}
         <section style={{ maxWidth:1180, margin:'0 auto', padding:'clamp(44px,6vw,72px) clamp(16px,3vw,24px) 0' }}>
@@ -62,18 +106,35 @@ export default function Home() {
             <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Shop by category</p>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(26px,3.5vw,44px)', fontWeight:400, marginTop:8 }}>Find your piece</h2>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))', gap:12 }}>
-            {CATS.map(c => (
-              <Link key={c.name} href={c.href} style={{ textDecoration:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'26px 12px', border:'1px solid var(--line)', background:'#fff', borderRadius:2, color:'var(--ink)' }}
+          <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill,minmax(clamp(100px,14vw,160px),1fr))`, gap:12 }}>
+            {cats.map(c => (
+              <Link key={c.name} href={c.href}
+                style={{ textDecoration:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:'clamp(18px,3vw,26px) 12px', border:'1px solid var(--line)', background:'#fff', borderRadius:3, color:'var(--ink)', transition:'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor='var(--gold)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor='var(--line)')}
               >
-                <span style={{ fontSize:26, color:'var(--gold)' }}>{c.icon}</span>
-                <span style={{ fontSize:11.5, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:500, textAlign:'center' }}>{c.name}</span>
+                <span style={{ fontSize:24, color:'var(--gold)' }}>{c.icon}</span>
+                <span style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:500, textAlign:'center', lineHeight:1.3 }}>{c.name}</span>
               </Link>
             ))}
           </div>
         </section>
+
+        {/* ── TRENDING ── */}
+        {trending.length > 0 && (
+          <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+              <div>
+                <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Right now</p>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>Trending pieces</h2>
+              </div>
+              <Link href="/browse" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>View all →</Link>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
+              {trending.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+            </div>
+          </section>
+        )}
 
         {/* ── EDITORIAL SPLIT ── */}
         <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
@@ -89,62 +150,89 @@ export default function Home() {
               <p style={{ color:'var(--ink2)', lineHeight:1.8, marginTop:16, fontSize:15 }}>
                 From engagement rings to trousseau sets — every piece crafted in our atelier, certified, and delivered with the GLYA guarantee.
               </p>
-              <Link href="/browse?col=Bridal" style={{ display:'inline-block', marginTop:28, padding:'12px 28px', border:'1px solid var(--ink)', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none', color:'var(--ink)', alignSelf:'flex-start' }}>
+              <Link href="/browse?col=Bridal"
+                style={{ display:'inline-block', marginTop:28, padding:'12px 28px', border:'1px solid var(--ink)', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none', color:'var(--ink)', alignSelf:'flex-start' }}>
                 Explore bridal →
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ── TRENDING ── */}
-        <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
-            <div>
-              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Right now</p>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>Trending pieces</h2>
+        {/* ── NEW ARRIVALS ── */}
+        {newArr.length > 0 && (
+          <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+              <div>
+                <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Just arrived</p>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>New arrivals</h2>
+              </div>
+              <Link href="/browse?tag=New" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>See new →</Link>
             </div>
-            <Link href="/browse" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>View all →</Link>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'clamp(12px,2vw,22px)' }}>
-            {trending.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
-          </div>
-        </section>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
+              {newArr.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+            </div>
+          </section>
+        )}
 
-        {/* ── LIVE PRICING BAND ── */}
-        <section style={{ background:'var(--paper2)', margin:'clamp(44px,6vw,72px) 0 0', padding:'clamp(32px,5vw,56px) clamp(16px,3vw,24px)' }}>
-          <div style={{ maxWidth:1180, margin:'0 auto' }}>
-            <div style={{ textAlign:'center', marginBottom:36 }}>
-              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Live pricing</p>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:8 }}>Price moves with the market</h2>
-              <p style={{ color:'var(--ink2)', marginTop:8, fontSize:14 }}>All prices update in real-time as gold rates change.</p>
+        {/* ── BLOG PREVIEW ── */}
+        <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:32, flexWrap:'wrap', gap:12 }}>
+            <div>
+              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>From the journal</p>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>Stories &amp; guides</h2>
             </div>
-            <div className="home-price-grid">
-              {[
-                { label:"22K Gold · today's rate",      val: inr(r22),              sub:'per gram · BIS hallmarked' },
-                { label:"18K Gold · today's rate",      val: inr(r18),              sub:'per gram · hallmarked' },
-                { label:"Platinum 950 · today's rate",  val: inr(PLATINUM_RATE),    sub:'per gram · hallmarked' },
-              ].map(card => (
-                <div key={card.label} style={{ border:'1px solid var(--line)', background:'#fff', padding:'clamp(18px,3vw,26px) clamp(16px,3vw,24px)', textAlign:'center' }}>
-                  <p style={{ fontSize:11, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--muted)' }}>{card.label}</p>
-                  <p className="flash" style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(28px,3vw,38px)', fontWeight:500, color:'var(--gold)', margin:'8px 0 4px' }}>{card.val}</p>
-                  <p style={{ fontSize:12, color:'var(--muted)' }}>{card.sub}</p>
-                </div>
+            <Link href="/journal" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>All posts →</Link>
+          </div>
+          {blogs.length > 0 ? (
+            <div className="blog-grid">
+              {blogs.map(post => (
+                <Link key={post.id} href={`/journal/${post.id}`} style={{ textDecoration:'none', color:'inherit' }}>
+                  <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:3, overflow:'hidden', position:'relative', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
+                    {post.coverImage
+                      ? <Image src={post.coverImage} alt={post.title} fill sizes="(max-width:900px) 100vw,33vw" style={{ objectFit:'cover' }} />
+                      : <span>◈</span>
+                    }
+                  </div>
+                  <div style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', margin:'14px 0 8px' }}>{post.category}</div>
+                  <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(18px,2vw,24px)', lineHeight:1.2 }}>{post.title}</h3>
+                  <p style={{ color:'var(--ink2)', fontSize:14, lineHeight:1.65, marginTop:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{post.excerpt}</p>
+                </Link>
               ))}
             </div>
-          </div>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'clamp(16px,2.5vw,32px)' }}>
+              {[
+                { cat:'Buying Guide', title:'How to buy gold jewellery in India', sub:'Understanding hallmarking, karats, and what to look for.' },
+                { cat:'Jewellery Education', title:'Diamond vs. Polki: which is right for you?', sub:'A guide to the most popular stones in Indian bridal jewellery.' },
+                { cat:'Care', title:'How to care for your fine jewellery', sub:'Simple practices that keep your pieces looking new for decades.' },
+              ].map(b => (
+                <Link key={b.title} href="/journal" style={{ textDecoration:'none', color:'inherit' }}>
+                  <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:3, border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>◈</div>
+                  <div style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', margin:'14px 0 8px' }}>{b.cat}</div>
+                  <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(18px,2vw,24px)', lineHeight:1.2 }}>{b.title}</h3>
+                  <p style={{ color:'var(--ink2)', fontSize:14, lineHeight:1.65, marginTop:8 }}>{b.sub}</p>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* ── NEW ARRIVALS ── */}
-        <section style={{ maxWidth:1180, margin:'0 auto', padding:'clamp(44px,6vw,72px) clamp(16px,3vw,24px) clamp(60px,6vw,80px)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
-            <div>
-              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Just arrived</p>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>New arrivals</h2>
+        {/* ── NEWSLETTER ── */}
+        <section style={{ background:'var(--ink)', margin:'clamp(44px,6vw,72px) 0 0' }}>
+          <div style={{ maxWidth:680, margin:'0 auto', padding:'clamp(44px,6vw,72px) clamp(20px,4vw,40px)', textAlign:'center' }}>
+            <p style={{ fontSize:11, letterSpacing:'0.22em', textTransform:'uppercase', color:'#B08D57', marginBottom:12 }}>Stay in the light</p>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:400, fontSize:'clamp(26px,3.5vw,44px)', color:'#EDE6D8', lineHeight:1.05 }}>
+              Early access. Private events.<br />New collections first.
+            </h2>
+            <div style={{ display:'flex', maxWidth:420, margin:'28px auto 0', border:'1px solid rgba(201,192,176,0.3)', borderRadius:2, overflow:'hidden', background:'rgba(255,255,255,0.05)' }}>
+              <input placeholder="Your email address" style={{ flex:1, background:'transparent', border:'none', padding:'14px 16px', fontSize:14, color:'#fff' }} />
+              <button
+                style={{ cursor:'pointer', background:'var(--gold)', border:'none', color:'var(--ink)', padding:'0 22px', fontSize:12, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, whiteSpace:'nowrap' }}
+                onMouseEnter={e => (e.currentTarget.style.background='#C9A865')}
+                onMouseLeave={e => (e.currentTarget.style.background='var(--gold)')}
+              >Subscribe</button>
             </div>
-            <Link href="/browse?tag=New" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>See new →</Link>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'clamp(12px,2vw,22px)' }}>
-            {newArr.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+            <p style={{ fontSize:12.5, color:'#8B8272', marginTop:12 }}>No spam. Unsubscribe any time.</p>
           </div>
         </section>
 

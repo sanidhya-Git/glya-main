@@ -1,5 +1,6 @@
 'use client';
 import { use } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { journalPosts, catalog, priceOf, inr } from '@/lib/catalog';
 import { useStore } from '@/lib/store';
@@ -46,8 +47,13 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         </div>
       </article>
 
-      <div style={{maxWidth:960,margin:'clamp(24px,3vw,36px) auto 0',padding:'0 28px'}}>
-        <div style={{width:'100%',aspectRatio:'16/9',background:'var(--paper2)',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',fontSize:80,color:'var(--line)',border:'1px solid var(--line)'}}>◈</div>
+      <div style={{ maxWidth:960, margin:'clamp(24px,3vw,36px) auto 0', padding:'0 clamp(16px,3vw,28px)' }}>
+        <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
+          {(art as any).coverImage
+            ? <Image src={(art as any).coverImage} alt={art.title} fill sizes="(max-width:960px) 100vw,960px" style={{ objectFit:'cover' }} />
+            : <span>◈</span>
+          }
+        </div>
       </div>
 
       <article style={{maxWidth:680,margin:'0 auto',padding:'clamp(28px,4vw,44px) 28px'}}>
@@ -91,7 +97,12 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'clamp(18px,3vw,32px)'}}>
           {more.map(p => (
             <Link key={p.id} href={`/journal/${p.id}`} style={{textDecoration:'none',color:'inherit',cursor:'pointer'}}>
-              <div style={{width:'100%',aspectRatio:'3/2',background:'var(--paper2)',borderRadius:3,display:'flex',alignItems:'center',justifyContent:'center',fontSize:44,color:'var(--line)',border:'1px solid var(--line)'}}>◈</div>
+              <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
+                {(p as any).coverImage
+                  ? <Image src={(p as any).coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" style={{ objectFit:'cover' }} />
+                  : <span>◈</span>
+                }
+              </div>
               <div style={{fontSize:11.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--gold-d)',margin:'14px 0 7px'}}>{p.category}</div>
               <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:22,lineHeight:1.15}}>{p.title}</h3>
             </Link>
