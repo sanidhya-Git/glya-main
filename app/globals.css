@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #FAF7F1;
+  --paper2: #F2EDE3;
+  --ink: #211C17;
+  --ink2: #4A423A;
+  --gold: #B08D57;
+  --gold-d: #93733E;
+  --line: #E7DFD2;
+  --muted: #8C8275;
+  --em: #2F4A3F;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--paper); color: var(--ink); font-weight: 400; letter-spacing: 0.01em; }
+::selection { background: #E4D2AE; }
+input, textarea, button, select { font-family: inherit; color: inherit; }
+input:focus, textarea:focus, select:focus { outline: none; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #DCD2C0; border-radius: 8px; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+@keyframes glyaUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes glyaFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes glyaSpin { to { transform: rotate(360deg); } }
+@keyframes glyaFlash { 0% { color: #B08D57; } 100% { color: inherit; } }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+.animate-fade { animation: glyaFade 0.5s ease; }
+.animate-up { animation: glyaUp 0.6s ease; }
+.flash { animation: glyaFlash 1.2s ease; }

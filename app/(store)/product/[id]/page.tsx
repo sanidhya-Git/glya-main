@@ -1,0 +1,206 @@
+'use client';
+import { useState, use } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useStore } from '@/lib/store';
+import { catalog, priceOf, inr, metalLabel, sizeInfo } from '@/lib/catalog';
+import ProductCard from '@/components/ProductCard';
+import type { StorefrontProduct } from '@/lib/api';
+
+export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const goldRate      = useStore(s => s.goldRate);
+  const wishlist      = useStore(s => s.wishlist);
+  const toggleWish    = useStore(s => s.toggleWish);
+  const addToCart     = useStore(s => s.addToCart);
+  const adminProducts = useStore(s => s.adminProducts);
+  const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
+
+  const p = allProducts.find(x => x.id === Number(id)) as StorefrontProduct | undefined;
+  const [karat, setKarat] = useState(p?.karat || '18K');
+  const [size, setSize] = useState<string | null>(null);
+  const [engraving, setEngraving] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [showBreak, setShowBreak] = useState(true);
+  const [openAcc, setOpenAcc] = useState<number | null>(null);
+  const [galleryIdx, setGalleryIdx] = useState(0);
+
+  if (!p) return <div style={{padding:'60px 28px',textAlign:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:30}}>Product not found.</div>;
+
+  const pr = priceOf(p, karat, goldRate);
+  const si = sizeInfo(p);
+  const wished = wishlist.includes(p.id);
+  const rate22 = inr(Math.round(goldRate * 0.916));
+
+  const karats = p.metal === 'Platinum' ? ['PT950'] : p.cat === 'Rings' || p.cat === 'Necklaces' ? ['18K','22K'] : ['22K','18K'];
+
+  const breakdown = [
+    { label: 'Metal value', val: inr(pr.mv) },
+    { label: 'Making charges', val: inr(pr.mk) },
+    ...(pr.gem > 0 ? [{ label: 'Stone value', val: inr(pr.gem) }] : []),
+    { label: 'GST (3%)', val: inr(pr.gst) },
+  ];
+
+  const accordions = [
+    { title: 'Specifications', body: `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS. ${p.reviews} verified reviews.` },
+    { title: 'Certification', body: `${p.gem ? 'IGI certified stone. ' : ''}BIS hallmarked metal. Ships with authenticity certificate and GST invoice.` },
+    { title: 'Care & shipping', body: 'Complimentary insured shipping across India. 30-day free returns. Lifetime exchange and buyback available.' },
+  ];
+
+  const related = allProducts.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
+  const thumbPlaceholders = [0, 1, 2, 3];
+
+  function handleAdd() {
+    if (!p) return;
+    const key = [p.id, karat, size, engraving].join('|');
+    addToCart({ key, id: p.id, karat, size, engraving });
+    router.push('/cart');
+  }
+
+  return (
+    <main style={{maxWidth:1360,margin:'0 auto',padding:'clamp(20px,3vw,40px) 28px',animation:'glyaFade 0.5s ease'}}>
+      <div style={{fontSize:12,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--muted)',marginBottom:22}}>
+        <Link href="/" style={{color:'var(--muted)',textDecoration:'none'}}>Home</Link> · <Link href={`/browse?cat=${p.cat}`} style={{color:'var(--muted)',textDecoration:'none'}}>{p.cat}</Link> · <span style={{color:'var(--ink)'}}>{p.name}</span>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:'clamp(28px,4vw,60px)',alignItems:'start'}}>
+        {/* GALLERY */}
+        <div style={{position:'sticky',top:96}}>
+          <div style={{position:'relative'}}>
+            <div style={{width:'100%',aspectRatio:'1/1',background:'var(--paper2)',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',fontSize:80,color:'var(--line)',border:'1px solid var(--line)'}}>◈</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginTop:12}}>
+            {thumbPlaceholders.map(i => (
+              <div key={i} onClick={() => setGalleryIdx(i)} style={{cursor:'pointer',border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`,borderRadius:3,overflow:'hidden',aspectRatio:'1/1',background:'var(--paper2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,color:'var(--line)'}}> ◈ </div>
+            ))}
+          </div>
+        </div>
+
+        {/* INFO */}
+        <div>
+          <div style={{fontSize:12,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:12}}>{p.col} Collection</div>
+          <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(34px,4.4vw,54px)',lineHeight:1.02}}>{p.name}</h1>
+          <div style={{display:'flex',alignItems:'center',gap:14,margin:'14px 0 22px',flexWrap:'wrap'}}>
+            <span style={{fontSize:13.5,color:'var(--gold-d)'}}>★★★★★ {p.rating.toFixed(1)}</span>
+            <span style={{fontSize:13,color:'var(--muted)'}}>{p.reviews} reviews</span>
+            <span style={{fontSize:11.5,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--em)',border:'1px solid var(--em)',padding:'3px 9px',borderRadius:2}}>In stock</span>
+          </div>
+          <div style={{display:'flex',alignItems:'baseline',gap:14,flexWrap:'wrap'}}>
+            <span className="flash" style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(34px,4vw,46px)',fontWeight:500}}>{inr(pr.total)}</span>
+            <span style={{fontSize:13,color:'var(--muted)'}}>inclusive of GST</span>
+          </div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:8,marginTop:10,fontSize:12.5,color:'var(--em)',background:'rgba(47,74,63,0.06)',padding:'7px 12px',borderRadius:2}}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:'var(--em)'}}></span>
+            Live price · updates with the {rate22}/g gold rate
+          </div>
+
+          {/* PRICE BREAKDOWN */}
+          <div style={{border:'1px solid var(--line)',borderRadius:4,marginTop:26,overflow:'hidden'}}>
+            <div onClick={() => setShowBreak(!showBreak)} style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'15px 18px',background:'var(--paper2)',fontSize:13,letterSpacing:'0.1em',textTransform:'uppercase'}}>
+              Price breakdown <span>{showBreak ? '−' : '+'}</span>
+            </div>
+            {showBreak && (
+              <div style={{padding:'6px 18px 14px'}}>
+                {breakdown.map(b => (
+                  <div key={b.label} style={{display:'flex',justifyContent:'space-between',padding:'11px 0',borderBottom:'1px solid var(--line)',fontSize:14}}>
+                    <span style={{color:'var(--ink2)'}}>{b.label}</span><span>{b.val}</span>
+                  </div>
+                ))}
+                <div style={{display:'flex',justifyContent:'space-between',padding:'14px 0 4px',fontSize:16,fontWeight:500}}><span>Total</span><span>{inr(pr.total)}</span></div>
+              </div>
+            )}
+          </div>
+
+          {/* KARAT */}
+          <div style={{marginTop:28}}>
+            <div style={{fontSize:12,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:12,fontWeight:500}}>Metal &amp; purity</div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              {karats.map(k => (
+                <div key={k} onClick={() => setKarat(k)} style={{cursor:'pointer',padding:'12px 20px',border:`1px solid ${karat===k?'var(--gold)':'var(--line)'}`,background:karat===k?'rgba(176,141,87,0.08)':'transparent',color:karat===k?'#93733E':'var(--ink)',borderRadius:2,fontSize:14}}>
+                  {k === 'PT950' ? 'Platinum 950' : k + ' Yellow Gold'}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SIZE */}
+          {si && (
+            <div style={{marginTop:24}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+                <span style={{fontSize:12,letterSpacing:'0.14em',textTransform:'uppercase',fontWeight:500}}>{si.label}</span>
+                <span style={{fontSize:12.5,color:'var(--gold-d)',borderBottom:'1px solid var(--gold)',cursor:'pointer'}}>Size guide</span>
+              </div>
+              <div style={{display:'flex',gap:9,flexWrap:'wrap'}}>
+                {si.opts.map(o => (
+                  <div key={o} onClick={() => setSize(o)} style={{cursor:'pointer',minWidth:46,textAlign:'center',padding:'11px 12px',border:`1px solid ${size===o?'var(--gold)':'var(--line)'}`,background:size===o?'rgba(176,141,87,0.08)':'transparent',color:size===o?'#93733E':'var(--ink)',borderRadius:2,fontSize:14}}>{o}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ENGRAVING (rings only) */}
+          {p.cat === 'Rings' && (
+            <div style={{marginTop:24}}>
+              <div style={{fontSize:12,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:12,fontWeight:500}}>Complimentary engraving</div>
+              <div style={{display:'flex',gap:14,alignItems:'stretch',flexWrap:'wrap'}}>
+                <input value={engraving} onChange={e => setEngraving(e.target.value)} maxLength={15} placeholder="Add up to 15 characters"
+                  style={{flex:1,minWidth:200,border:'1px solid var(--line)',background:'var(--paper)',padding:'13px 16px',fontSize:14,borderRadius:2}} />
+                <div style={{minWidth:150,display:'flex',alignItems:'center',justifyContent:'center',background:'linear-gradient(135deg,#E8D4A6,#C9A865,#B08D57)',borderRadius:40,padding:'0 22px',boxShadow:'inset 0 1px 3px rgba(255,255,255,0.4)'}}>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:20,color:'#5A4526',letterSpacing:'0.04em'}}>{engraving || 'Preview'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ACTIONS */}
+          <div style={{display:'flex',gap:12,marginTop:30,flexWrap:'wrap'}}>
+            <button onClick={handleAdd} style={{cursor:'pointer',flex:1,minWidth:200,background:'var(--ink)',color:'#F7F2E8',border:'none',padding:18,fontSize:13,letterSpacing:'0.14em',textTransform:'uppercase',borderRadius:2}}
+              onMouseEnter={e => (e.currentTarget.style.background='var(--gold-d)')}
+              onMouseLeave={e => (e.currentTarget.style.background='var(--ink)')}
+            >Add to cart</button>
+            <button onClick={() => toggleWish(p.id)} style={{cursor:'pointer',width:58,border:'1px solid var(--ink)',background:'transparent',fontSize:20,color:wished?'#B08D57':'var(--ink)',borderRadius:2}}>{wished?'♥':'♡'}</button>
+          </div>
+
+          {/* DELIVERY */}
+          <div style={{display:'flex',gap:12,marginTop:20,alignItems:'center',border:'1px solid var(--line)',borderRadius:3,padding:'14px 16px',flexWrap:'wrap'}}>
+            <span style={{fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--muted)'}}>Delivery</span>
+            <input value={pincode} onChange={e => setPincode(e.target.value)} placeholder="Enter pincode" maxLength={6}
+              style={{border:'1px solid var(--line)',background:'var(--paper)',padding:'9px 12px',fontSize:13.5,borderRadius:2,width:130}} />
+            {pincode.length === 6 && <span style={{fontSize:13.5,color:'var(--em)'}}>✓ Delivery in 3–5 days</span>}
+          </div>
+
+          {/* TRUST */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:14,marginTop:24}}>
+            {[{icon:'◈',label:'IGI / BIS\ncertified'},{icon:'↺',label:'30-day\nreturns'},{icon:'∞',label:'Lifetime\nexchange'}].map(t => (
+              <div key={t.icon} style={{textAlign:'center',padding:'14px 8px',background:'var(--paper2)',borderRadius:3}}>
+                <div style={{fontSize:20}}>{t.icon}</div>
+                <div style={{fontSize:11.5,letterSpacing:'0.06em',marginTop:6,color:'var(--ink2)',whiteSpace:'pre-line'}}>{t.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ACCORDIONS */}
+          <div style={{marginTop:28,borderTop:'1px solid var(--line)'}}>
+            {accordions.map((a, i) => (
+              <div key={i} style={{borderBottom:'1px solid var(--line)'}}>
+                <div onClick={() => setOpenAcc(openAcc===i?null:i)} style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'17px 0',fontFamily:"'Cormorant Garamond',serif",fontSize:21}}>
+                  {a.title} <span style={{fontFamily:'Jost',fontSize:18,color:'var(--muted)'}}>{openAcc===i?'−':'+'}</span>
+                </div>
+                {openAcc===i && <div style={{padding:'0 0 18px',color:'var(--ink2)',fontSize:14.5,lineHeight:1.75,fontWeight:300}}>{a.body}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RELATED */}
+      <section style={{marginTop:'clamp(40px,6vw,80px)'}}>
+        <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(26px,3vw,38px)',marginBottom:24}}>You may also love</h2>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))',gap:'clamp(14px,2vw,24px)'}}>
+          {related.map(r => <ProductCard key={r.id} product={r} goldRate={goldRate} />)}
+        </div>
+      </section>
+    </main>
+  );
+}
