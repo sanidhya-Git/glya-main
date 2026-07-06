@@ -50,6 +50,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const related = allProducts.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
 
   function handleAdd() {
+    if (!p) return;
     const key = [p.id, karat, size, engraving].join('|');
     addToCart({ key, id: p.id, karat, size, engraving });
     router.push('/cart');

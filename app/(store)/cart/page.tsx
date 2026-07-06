@@ -13,7 +13,7 @@ export default function CartPage() {
   const adminProducts = useStore(s => s.adminProducts);
   const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
 
-  const items = cart.map(it => {
+  const rawItems = cart.map(it => {
     const p  = allProducts.find(x => x.id === it.id) as StorefrontProduct | undefined;
     if (!p) return null;
     const pr  = priceOf(p, it.karat, goldRate);
@@ -21,7 +21,8 @@ export default function CartPage() {
     const line = pr.total * qty;
     const img  = p.images?.[0];
     return { ...it, p, img, priceStr: inr(pr.total), lineStr: inr(line), lineNum: line, metalLabel: it.karat === 'PT950' ? 'Platinum 950' : it.karat + ' Gold' };
-  }).filter(Boolean) as NonNullable<ReturnType<typeof items[0]>>[];
+  });
+  const items = rawItems.filter(Boolean) as NonNullable<typeof rawItems[0]>[];
 
   const subtotal    = items.reduce((a, b) => a + b.lineNum, 0);
   let   discount    = 0;
