@@ -1,4 +1,3 @@
-import PromoBar from '@/components/PromoBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import GoldRateProvider from '@/components/GoldRateProvider';
@@ -9,7 +8,6 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     <>
       <GoldRateProvider />
       <DataProvider />
-      <PromoBar />
       <Header />
       {children}
       <Footer />

@@ -38,11 +38,12 @@ export default function CheckoutPage() {
   const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
 
   /* ── Auth state ── */
-  const [authEmail,   setAuthEmail]   = useState('');
-  const [otpSent,     setOtpSent]     = useState(false);
-  const [generatedOtp,setGeneratedOtp]= useState('');
-  const [enteredOtp,  setEnteredOtp]  = useState('');
-  const [otpErr,      setOtpErr]      = useState('');
+  const [authEmail,  setAuthEmail]  = useState('');
+  const [otpSent,    setOtpSent]    = useState(false);
+  const [otpToken,   setOtpToken]   = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [otpErr,     setOtpErr]     = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   /* ── Checkout state ── */
   const [step,      setStep]      = useState(1);
@@ -92,22 +93,53 @@ export default function CheckoutPage() {
   const total    = subtotal - discount + shipCost + wrapCost + insCost;
 
   /* ── OTP handlers ── */
-  function handleSendOtp() {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setGeneratedOtp(code);
-    setOtpSent(true);
+  async function handleSendOtp() {
+    setOtpLoading(true);
     setOtpErr('');
-    setEnteredOtp('');
-    console.log(`[GLYA OTP] ${code} → ${authEmail}`);
+    try {
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setOtpErr(data.error || 'Failed to send OTP. Please try again.');
+      } else {
+        setOtpToken(data.token);
+        setOtpSent(true);
+        setEnteredOtp('');
+      }
+    } catch {
+      setOtpErr('Network error. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
   }
 
-  function handleVerifyOtp() {
-    if (enteredOtp === generatedOtp) {
-      setUser({ email: authEmail });
-      setForm(f => ({ ...f, email: authEmail }));
-      setOtpErr('');
-    } else {
-      setOtpErr('Invalid OTP. Please try again.');
+  async function handleVerifyOtp() {
+    setOtpLoading(true);
+    setOtpErr('');
+    try {
+      const res = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, otp: enteredOtp, token: otpToken }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setOtpErr(data.error || 'Verification failed. Please try again.');
+      } else if (data.success) {
+        setUser({ email: authEmail });
+        setForm(f => ({ ...f, email: authEmail }));
+        setOtpErr('');
+      } else {
+        setOtpErr('Invalid OTP. Please try again.');
+      }
+    } catch {
+      setOtpErr('Network error. Please try again.');
+    } finally {
+      setOtpLoading(false);
     }
   }
 
@@ -210,47 +242,48 @@ export default function CheckoutPage() {
               placeholder="Email address"
               value={authEmail}
               onChange={e => setAuthEmail(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && authEmail.includes('@')) handleSendOtp(); }}
+              onKeyDown={e => { if (e.key === 'Enter' && authEmail.includes('@') && !otpLoading) handleSendOtp(); }}
               style={inputStyle}
               autoFocus
+              disabled={otpLoading}
             />
+            {otpErr && <div style={{ fontSize: 13, color: '#C0392B' }}>{otpErr}</div>}
             <button
               onClick={handleSendOtp}
-              disabled={!authEmail.includes('@') || authEmail.length < 5}
-              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!authEmail.includes('@') || authEmail.length < 5) ? 0.5 : 1 }}
+              disabled={!authEmail.includes('@') || authEmail.length < 5 || otpLoading}
+              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!authEmail.includes('@') || authEmail.length < 5 || otpLoading) ? 0.5 : 1 }}
             >
-              Send OTP
+              {otpLoading ? 'Sending…' : 'Send OTP'}
             </button>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 14 }}>
             <div style={{ padding: '14px 16px', background: 'rgba(47,74,63,0.08)', border: '1px solid rgba(47,74,63,0.2)', borderRadius: 3 }}>
-              <div style={{ fontSize: 13.5, color: 'var(--em)' }}>OTP sent to <b>{authEmail}</b></div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
-                Demo mode — your OTP: <b style={{ letterSpacing: '0.2em', color: 'var(--ink)', fontSize: 15 }}>{generatedOtp}</b>
-              </div>
+              <div style={{ fontSize: 13.5, color: 'var(--em)' }}>Verification code sent to <b>{authEmail}</b></div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>Check your inbox and enter the 6-digit code below.</div>
             </div>
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Enter 6-digit OTP"
+              placeholder="Enter 6-digit code"
               value={enteredOtp}
               onChange={e => { setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpErr(''); }}
-              onKeyDown={e => { if (e.key === 'Enter' && enteredOtp.length === 6) handleVerifyOtp(); }}
+              onKeyDown={e => { if (e.key === 'Enter' && enteredOtp.length === 6 && !otpLoading) handleVerifyOtp(); }}
               maxLength={6}
               style={{ ...inputStyle, letterSpacing: '0.28em', fontSize: 18, textAlign: 'center' }}
               autoFocus
+              disabled={otpLoading}
             />
             {otpErr && <div style={{ fontSize: 13, color: '#C0392B' }}>{otpErr}</div>}
             <button
               onClick={handleVerifyOtp}
-              disabled={enteredOtp.length !== 6}
-              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: enteredOtp.length !== 6 ? 0.5 : 1 }}
+              disabled={enteredOtp.length !== 6 || otpLoading}
+              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (enteredOtp.length !== 6 || otpLoading) ? 0.5 : 1 }}
             >
-              Verify OTP
+              {otpLoading ? 'Verifying…' : 'Verify code'}
             </button>
             <button
-              onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpErr(''); setGeneratedOtp(''); }}
+              onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpErr(''); setOtpToken(''); }}
               style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 0, textAlign: 'left' }}
             >
               ← Change email

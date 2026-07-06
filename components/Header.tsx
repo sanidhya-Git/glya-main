@@ -209,6 +209,12 @@ export default function Header() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  /* Lock body scroll whenever any overlay is open */
+  useEffect(() => {
+    document.body.style.overflow = (menuOpen || searchOpen) ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen, searchOpen]);
+
   function go(path: string) {
     router.push(path);
     setSearch(''); setSearchOpen(false); setMenuOpen(false);
