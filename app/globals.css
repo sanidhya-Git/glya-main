@@ -13,7 +13,9 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: hidden; }
 html, body { background: var(--paper); color: var(--ink); font-weight: 400; letter-spacing: 0.01em; }
+body { overflow-x: hidden; min-height: 100dvh; }
 ::selection { background: #E4D2AE; }
 input, textarea, button, select { font-family: inherit; color: inherit; }
 input:focus, textarea:focus, select:focus { outline: none; }

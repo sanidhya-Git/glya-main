@@ -63,6 +63,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       <style>{`
         .pdp-grid { display:grid; grid-template-columns:1fr 1fr; gap:clamp(28px,4vw,60px); align-items:start; }
         @media(max-width:760px){ .pdp-grid { grid-template-columns:1fr; } }
+        .pdp-gallery-sticky { position:sticky; top:96px; }
+        @media(max-width:760px){ .pdp-gallery-sticky { position:static; } }
       `}</style>
 
       {/* BREADCRUMB */}
@@ -78,7 +80,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
       <div className="pdp-grid">
         {/* GALLERY */}
-        <div style={{ position:'sticky', top:96 }}>
+        <div className="pdp-gallery-sticky">
           <div style={{ position:'relative', width:'100%', aspectRatio:'1/1', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
             {activeImg
               ? <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'cover' }} />

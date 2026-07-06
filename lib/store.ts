@@ -45,6 +45,7 @@ export interface Order {
     pincode: string;
     city: string;
     state: string;
+    country: string;
   };
   deliveryMethod: string;
   payment: string;
@@ -52,6 +53,9 @@ export interface Order {
 }
 
 interface GlyaStore {
+  user: { email: string } | null;
+  setUser: (u: { email: string } | null) => void;
+
   goldRate: number;
   setGoldRate: (r: number) => void;
 
@@ -98,6 +102,9 @@ interface GlyaStore {
 export const useStore = create<GlyaStore>()(
   persist(
     (set, get) => ({
+      user: null,
+      setUser: (u) => set({ user: u }),
+
       goldRate: 7180,
       setGoldRate: (r) => set({ goldRate: r }),
 
@@ -167,6 +174,7 @@ export const useStore = create<GlyaStore>()(
     {
       name: 'glya-store',
       partialize: (s) => ({
+        user: s.user,
         cart: s.cart,
         wishlist: s.wishlist,
         lastOrder: s.lastOrder,

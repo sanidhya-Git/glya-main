@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore, Order, OrderLine } from '@/lib/store';
 import { catalog, priceOf, inr } from '@/lib/catalog';
 import { createAdminOrder } from '@/lib/api';
+import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 
 const steps = ['Address', 'Delivery', 'Payment', 'Review'];
 const shipOptions = [
@@ -18,19 +19,55 @@ const payMethods = [
   { icon: '📦', label: 'Cash on delivery',      desc: 'Select pincodes' },
 ];
 
+const inputStyle: React.CSSProperties = {
+  border: '1px solid var(--line)', background: 'var(--paper)',
+  padding: '13px 14px', fontSize: 14, borderRadius: 2, width: '100%',
+};
+const selectStyle: React.CSSProperties = {
+  border: '1px solid var(--line)', background: 'var(--paper)',
+  padding: '13px 14px', fontSize: 14, borderRadius: 2, width: '100%',
+  appearance: 'none', cursor: 'pointer',
+};
+
 export default function CheckoutPage() {
   const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock } = useStore();
   const goldRate      = useStore(s => s.goldRate);
   const adminProducts = useStore(s => s.adminProducts);
+  const user          = useStore(s => s.user);
+  const setUser       = useStore(s => s.setUser);
   const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
+
+  /* ── Auth state ── */
+  const [authEmail,   setAuthEmail]   = useState('');
+  const [otpSent,     setOtpSent]     = useState(false);
+  const [generatedOtp,setGeneratedOtp]= useState('');
+  const [enteredOtp,  setEnteredOtp]  = useState('');
+  const [otpErr,      setOtpErr]      = useState('');
+
+  /* ── Checkout state ── */
   const [step,      setStep]      = useState(1);
   const [shipIdx,   setShipIdx]   = useState(0);
   const [payMethod, setPayMethod] = useState(0);
   const [placed,    setPlaced]    = useState(false);
   const [orderNo,   setOrderNo]   = useState('');
   const [capturedTotal, setCapturedTotal] = useState(0);
-  const [form, setForm] = useState({ first:'', last:'', email:'', mobile:'', addr1:'', addr2:'', pin:'', city:'', state:'' });
 
+  const [form, setForm] = useState({
+    first: '', last: '', email: '',
+    mobile: '', addr1: '', addr2: '',
+    country: 'IN', state: '', city: '', pin: '',
+  });
+
+  /* Pre-fill email when user is already logged in */
+  useEffect(() => {
+    if (user?.email) setForm(f => ({ ...f, email: f.email || user.email }));
+  }, [user?.email]);
+
+  const countryInfo = getCountry(form.country);
+  const pincodeValid  = form.pin.length > 0 && validatePincode(form.pin, form.country);
+  const pincodeError  = form.pin.length > 0 && !pincodeValid;
+
+  /* ── Cart totals ── */
   const items = cart.map(it => {
     const p  = allProducts.find(x => x.id === it.id) || catalog.find(x => x.id === it.id)!;
     const pr = priceOf(p, it.karat, goldRate);
@@ -43,17 +80,47 @@ export default function CheckoutPage() {
     };
   }).filter(it => it.p);
 
-  const subtotal  = items.reduce((a, b) => a + b.lineNum, 0);
-  let   discount  = 0;
+  const subtotal = items.reduce((a, b) => a + b.lineNum, 0);
+  let   discount = 0;
   if (couponApplied && !couponApplied.invalid) {
     if (couponApplied.type === 'pct') discount = Math.min(Math.round(subtotal * 0.10), 25000);
     else                               discount = Math.min(couponApplied.amount || 0, subtotal);
   }
-  const shipCost  = shipOptions[shipIdx].cost;
-  const wrapCost  = giftWrap    ? 299 : 0;
-  const insCost   = insurance   ? 499 : 0;
-  const total     = subtotal - discount + shipCost + wrapCost + insCost;
+  const shipCost = shipOptions[shipIdx].cost;
+  const wrapCost = giftWrap    ? 299 : 0;
+  const insCost  = insurance   ? 499 : 0;
+  const total    = subtotal - discount + shipCost + wrapCost + insCost;
 
+  /* ── OTP handlers ── */
+  function handleSendOtp() {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setGeneratedOtp(code);
+    setOtpSent(true);
+    setOtpErr('');
+    setEnteredOtp('');
+    console.log(`[GLYA OTP] ${code} → ${authEmail}`);
+  }
+
+  function handleVerifyOtp() {
+    if (enteredOtp === generatedOtp) {
+      setUser({ email: authEmail });
+      setForm(f => ({ ...f, email: authEmail }));
+      setOtpErr('');
+    } else {
+      setOtpErr('Invalid OTP. Please try again.');
+    }
+  }
+
+  /* ── Address step validation ── */
+  function addressComplete() {
+    if (!form.first || !form.last || !form.email || !form.mobile) return false;
+    if (!form.addr1 || !form.city || !form.country) return false;
+    if (countryInfo && countryInfo.states.length > 0 && !form.state) return false;
+    if (form.pin && pincodeError) return false;
+    return true;
+  }
+
+  /* ── Place order ── */
   function placeOrder() {
     const no = 'GLY' + Math.floor(700000 + Math.random() * 99999);
     const lines: OrderLine[] = items.map(it => ({
@@ -86,6 +153,7 @@ export default function CheckoutPage() {
         pincode:   form.pin,
         city:      form.city,
         state:     form.state,
+        country:   countryInfo?.name || form.country,
       },
       deliveryMethod: shipOptions[shipIdx].label,
       payment:        payMethods[payMethod].label,
@@ -99,8 +167,7 @@ export default function CheckoutPage() {
     clearCart();
     setPlaced(true);
 
-    // Persist order to admin MongoDB
-    const addrStr = [form.addr1, form.addr2, form.city, form.state, form.pin].filter(Boolean).join(', ');
+    const addrStr = [form.addr1, form.addr2, form.city, form.state, countryInfo?.name, form.pin].filter(Boolean).join(', ');
     createAdminOrder({
       no,
       customer:    `${form.first} ${form.last}`.trim() || 'Guest',
@@ -124,6 +191,79 @@ export default function CheckoutPage() {
     });
   }
 
+  /* ════════════════════════════════
+     AUTH GATE — shown if not logged in
+  ════════════════════════════════ */
+  if (!user) {
+    return (
+      <main style={{ maxWidth: 480, margin: '0 auto', padding: 'clamp(40px,6vw,80px) clamp(20px,5vw,40px)', animation: 'glyaFade 0.5s ease' }}>
+        <Link href="/cart" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none', display: 'inline-block', marginBottom: 28 }}>← Back to bag</Link>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,42px)' }}>Verify your email</h1>
+        <p style={{ color: 'var(--ink2)', fontSize: 14, marginTop: 10, marginBottom: 32, lineHeight: 1.75 }}>
+          A verified email is required to place an order. We'll send your invoice and order updates to this address.
+        </p>
+
+        {!otpSent ? (
+          <div style={{ display: 'grid', gap: 14 }}>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={authEmail}
+              onChange={e => setAuthEmail(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && authEmail.includes('@')) handleSendOtp(); }}
+              style={inputStyle}
+              autoFocus
+            />
+            <button
+              onClick={handleSendOtp}
+              disabled={!authEmail.includes('@') || authEmail.length < 5}
+              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!authEmail.includes('@') || authEmail.length < 5) ? 0.5 : 1 }}
+            >
+              Send OTP
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ padding: '14px 16px', background: 'rgba(47,74,63,0.08)', border: '1px solid rgba(47,74,63,0.2)', borderRadius: 3 }}>
+              <div style={{ fontSize: 13.5, color: 'var(--em)' }}>OTP sent to <b>{authEmail}</b></div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
+                Demo mode — your OTP: <b style={{ letterSpacing: '0.2em', color: 'var(--ink)', fontSize: 15 }}>{generatedOtp}</b>
+              </div>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Enter 6-digit OTP"
+              value={enteredOtp}
+              onChange={e => { setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpErr(''); }}
+              onKeyDown={e => { if (e.key === 'Enter' && enteredOtp.length === 6) handleVerifyOtp(); }}
+              maxLength={6}
+              style={{ ...inputStyle, letterSpacing: '0.28em', fontSize: 18, textAlign: 'center' }}
+              autoFocus
+            />
+            {otpErr && <div style={{ fontSize: 13, color: '#C0392B' }}>{otpErr}</div>}
+            <button
+              onClick={handleVerifyOtp}
+              disabled={enteredOtp.length !== 6}
+              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: enteredOtp.length !== 6 ? 0.5 : 1 }}
+            >
+              Verify OTP
+            </button>
+            <button
+              onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpErr(''); setGeneratedOtp(''); }}
+              style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 0, textAlign: 'left' }}
+            >
+              ← Change email
+            </button>
+          </div>
+        )}
+      </main>
+    );
+  }
+
+  /* ════════════════════════════════
+     ORDER PLACED
+  ════════════════════════════════ */
   if (placed) {
     const eta = new Date();
     eta.setDate(eta.getDate() + (shipIdx === 0 ? 5 : shipIdx === 1 ? 2 : 1));
@@ -134,7 +274,7 @@ export default function CheckoutPage() {
           <div style={{ width: 76, height: 76, borderRadius: '50%', border: '1.5px solid var(--em)', color: 'var(--em)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, margin: '0 auto' }}>✓</div>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(32px,4vw,48px)', marginTop: 24 }}>Thank you.</h1>
           <p style={{ color: 'var(--ink2)', fontSize: 16, marginTop: 12, lineHeight: 1.7 }}>
-            Your order <b>{orderNo}</b> is confirmed. A certificate of authenticity and GST invoice are on their way to your inbox.
+            Your order <b>{orderNo}</b> is confirmed. A certificate of authenticity and GST invoice are on their way to {form.email}.
           </p>
           <div style={{ background: 'var(--paper2)', borderRadius: 4, padding: 22, marginTop: 28, textAlign: 'left', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
             <div><div style={{ fontSize: 11.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>Total paid</div><div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>{inr(capturedTotal)}</div></div>
@@ -150,19 +290,37 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ════════════════════════════════
+     MAIN CHECKOUT
+  ════════════════════════════════ */
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(18px,3vw,48px) clamp(14px,3vw,28px)', animation: 'glyaFade 0.5s ease' }}>
       <style>{`
-        .co-name-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; }
-        .co-addr-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px; }
-        .co-layout { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:clamp(22px,4vw,48px); align-items:start; }
-        .co-summary { background:var(--paper2); border-radius:4px; padding:clamp(18px,3vw,26px); position:sticky; top:80px; }
-        @media (max-width:640px){ .co-summary { position:static; } }
+        .co-name-grid  { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; }
+        .co-addr-grid  { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px; }
+        .co-geo-grid   { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        @media(max-width:480px){ .co-geo-grid { grid-template-columns:1fr; } }
+        .co-layout     { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:clamp(22px,4vw,48px); align-items:start; }
+        .co-summary    { background:var(--paper2); border-radius:4px; padding:clamp(18px,3vw,26px); position:sticky; top:80px; }
+        @media(max-width:640px){ .co-summary { position:static; } }
+        .co-select-wrap { position:relative; }
+        .co-select-wrap::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--muted); font-size:12px; }
       `}</style>
-      <Link href="/cart" style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none', display: 'inline-block', marginBottom: 8 }}>← Back to bag</Link>
-      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,48px)' }}>Checkout</h1>
 
-      <div style={{ display: 'flex', gap: 6, margin: '22px 0 28px', flexWrap: 'wrap' }}>
+      {/* Logged-in indicator */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+        <Link href="/cart" style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none' }}>← Back to bag</Link>
+        <div style={{ fontSize: 12.5, color: 'var(--em)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--em)', display: 'inline-block' }}></span>
+          {user.email}
+          <button onClick={() => setUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0 }}>Sign out</button>
+        </div>
+      </div>
+
+      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,48px)', marginBottom: 8 }}>Checkout</h1>
+
+      {/* Steps */}
+      <div style={{ display: 'flex', gap: 6, margin: '16px 0 28px', flexWrap: 'wrap' }}>
         {steps.map((s, i) => (
           <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 110 }}>
             <span style={{ width: 28, height: 28, borderRadius: '50%', border: `1.5px solid ${i + 1 === step ? 'var(--ink)' : i + 1 < step ? 'var(--gold)' : 'var(--line)'}`, background: i + 1 < step ? 'var(--gold)' : i + 1 === step ? 'var(--ink)' : 'transparent', color: i + 1 <= step ? '#fff' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>
@@ -175,25 +333,89 @@ export default function CheckoutPage() {
 
       <div className="co-layout">
         <div>
+          {/* ── STEP 1: Address ── */}
           {step === 1 && (
             <div style={{ display: 'grid', gap: 13 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery address</div>
+
               <div className="co-name-grid">
-                <input placeholder="First name"  value={form.first}  onChange={e => setForm(f => ({ ...f, first:  e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-                <input placeholder="Last name"   value={form.last}   onChange={e => setForm(f => ({ ...f, last:   e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
+                <input placeholder="First name" value={form.first} onChange={e => setForm(f => ({ ...f, first: e.target.value }))} style={inputStyle} />
+                <input placeholder="Last name"  value={form.last}  onChange={e => setForm(f => ({ ...f, last:  e.target.value }))} style={inputStyle} />
               </div>
-              <input type="email" placeholder="Email address" value={form.email}  onChange={e => setForm(f => ({ ...f, email:  e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-              <input placeholder="Mobile number"             value={form.mobile} onChange={e => setForm(f => ({ ...f, mobile: e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-              <input placeholder="Flat, house no., building" value={form.addr1}  onChange={e => setForm(f => ({ ...f, addr1:  e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-              <input placeholder="Area, street, locality"   value={form.addr2}  onChange={e => setForm(f => ({ ...f, addr2:  e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-              <div className="co-addr-grid">
-                <input placeholder="Pincode" value={form.pin}   onChange={e => setForm(f => ({ ...f, pin:   e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-                <input placeholder="City"    value={form.city}  onChange={e => setForm(f => ({ ...f, city:  e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
-                <input placeholder="State"   value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={{ border: '1px solid var(--line)', background: 'var(--paper)', padding: '13px 14px', fontSize: 14, borderRadius: 2 }} />
+
+              <input type="email" placeholder="Email address" value={form.email}  onChange={e => setForm(f => ({ ...f, email:  e.target.value }))} style={inputStyle} />
+              <input placeholder="Mobile number"             value={form.mobile} onChange={e => setForm(f => ({ ...f, mobile: e.target.value }))} style={inputStyle} />
+              <input placeholder="Flat, house no., building" value={form.addr1}  onChange={e => setForm(f => ({ ...f, addr1:  e.target.value }))} style={inputStyle} />
+              <input placeholder="Area, street, locality"   value={form.addr2}  onChange={e => setForm(f => ({ ...f, addr2:  e.target.value }))} style={inputStyle} />
+
+              {/* Country */}
+              <div>
+                <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>Country</div>
+                <div className="co-select-wrap">
+                  <select
+                    value={form.country}
+                    onChange={e => setForm(f => ({ ...f, country: e.target.value, state: '', pin: '' }))}
+                    style={selectStyle}
+                  >
+                    {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* State / Region */}
+              <div className="co-geo-grid">
+                <div>
+                  <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>
+                    {countryInfo && countryInfo.states.length > 0 ? 'State / Province' : 'State / Region'}
+                  </div>
+                  {countryInfo && countryInfo.states.length > 0 ? (
+                    <div className="co-select-wrap">
+                      <select
+                        value={form.state}
+                        onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+                        style={selectStyle}
+                      >
+                        <option value="">Select state</option>
+                        {countryInfo.states.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <input placeholder="State / Region" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={inputStyle} />
+                  )}
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>City</div>
+                  <input placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={inputStyle} />
+                </div>
+              </div>
+
+              {/* Pincode */}
+              <div>
+                <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>
+                  {countryInfo?.pincodeLabel ?? 'Postal Code'}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    placeholder={countryInfo?.pincodePlaceholder ?? 'Postal code'}
+                    value={form.pin}
+                    onChange={e => setForm(f => ({ ...f, pin: e.target.value }))}
+                    maxLength={countryInfo?.pincodeMaxLen ?? 12}
+                    style={{ ...inputStyle, borderColor: pincodeError ? '#C0392B' : pincodeValid ? 'var(--em)' : 'var(--line)' }}
+                  />
+                  {pincodeValid  && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--em)', fontSize: 15 }}>✓</span>}
+                  {pincodeError  && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#C0392B', fontSize: 15 }}>✗</span>}
+                </div>
+                {pincodeError && (
+                  <div style={{ fontSize: 12.5, color: '#C0392B', marginTop: 5 }}>
+                    Invalid {countryInfo?.pincodeLabel ?? 'postal code'} for {countryInfo?.name ?? 'selected country'}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
+          {/* ── STEP 2: Delivery ── */}
           {step === 2 && (
             <div style={{ display: 'grid', gap: 14 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery method</div>
@@ -209,6 +431,7 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {/* ── STEP 3: Payment ── */}
           {step === 3 && (
             <div style={{ display: 'grid', gap: 12 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Payment method</div>
@@ -225,6 +448,7 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {/* ── STEP 4: Review ── */}
           {step === 4 && (
             <div style={{ display: 'grid', gap: 16 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Review &amp; place order</div>
@@ -235,26 +459,31 @@ export default function CheckoutPage() {
                   <div style={{ fontSize: 15 }}>{i.lineStr}</div>
                 </div>
               ))}
-              <div style={{ background: 'var(--paper2)', borderRadius: 3, padding: '16px 18px', fontSize: 14, color: 'var(--ink2)' }}>
-                Delivering to {form.addr1 || 'your address'} · {shipOptions[shipIdx].label}
+              <div style={{ background: 'var(--paper2)', borderRadius: 3, padding: '16px 18px', fontSize: 14, color: 'var(--ink2)', lineHeight: 1.7 }}>
+                <div>Delivering to {form.addr1 || 'your address'}, {form.city}{form.state ? ', ' + form.state : ''}, {countryInfo?.name}</div>
+                <div style={{ marginTop: 4 }}>Via {shipOptions[shipIdx].label}</div>
               </div>
             </div>
           )}
 
+          {/* Navigation buttons */}
           <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
             {step > 1 && (
               <button onClick={() => setStep(s => s - 1)} style={{ cursor: 'pointer', background: 'transparent', border: '1px solid var(--ink)', color: 'var(--ink)', padding: '16px 28px', fontSize: 12.5, letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: 2 }}>Back</button>
             )}
-            <button onClick={step === 4 ? placeOrder : () => setStep(s => s + 1)}
-              style={{ cursor: 'pointer', flex: 1, background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: 16, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2 }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--gold-d)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--ink)')}
+            <button
+              onClick={step === 4 ? placeOrder : () => setStep(s => s + 1)}
+              disabled={step === 1 && !addressComplete()}
+              style={{ cursor: 'pointer', flex: 1, background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: 16, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (step === 1 && !addressComplete()) ? 0.5 : 1 }}
+              onMouseEnter={e => { if (!(step === 1 && !addressComplete())) (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-d)'; }}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ink)')}
             >
               {step === 4 ? 'Place order' : step === 1 ? 'Continue to delivery' : step === 2 ? 'Continue to payment' : 'Review order'}
             </button>
           </div>
         </div>
 
+        {/* Summary sidebar */}
         <div className="co-summary">
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, marginBottom: 16 }}>Summary</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14 }}>
