@@ -129,11 +129,22 @@ export interface AdminOrderPayload {
   payment: string;
   status: string;
   date: string;
+  isoDate?: string;
   address: string;
   lines: { name: string; meta: string; qty: number; priceStr: string }[];
   subtotalStr: string;
   discountStr: string;
   shippingStr: string;
+}
+
+export async function fetchAdminOrders(): Promise<AdminOrderPayload[]> {
+  try {
+    const res = await fetch(`${BASE}/api/orders`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function createAdminOrder(payload: AdminOrderPayload): Promise<boolean> {

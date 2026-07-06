@@ -5,7 +5,6 @@ import { useStore } from '@/lib/store';
 import { catalog } from '@/lib/catalog';
 import GoldRateProvider from '@/components/GoldRateProvider';
 import DataProvider from '@/components/DataProvider';
-import PromoBar from '@/components/PromoBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -63,7 +62,6 @@ export default function Home() {
       `}</style>
       <GoldRateProvider />
       <DataProvider />
-      <PromoBar />
       <Header />
 
       <main style={{ background:'var(--paper)', minHeight:'calc(100vh - 120px)' }}>

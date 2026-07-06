@@ -30,7 +30,7 @@ const selectStyle: React.CSSProperties = {
 };
 
 export default function CheckoutPage() {
-  const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock } = useStore();
+  const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock, mergeOrders } = useStore();
   const goldRate      = useStore(s => s.goldRate);
   const adminProducts = useStore(s => s.adminProducts);
   const user          = useStore(s => s.user);
@@ -132,6 +132,7 @@ export default function CheckoutPage() {
       } else if (data.success) {
         setUser({ email: authEmail });
         setForm(f => ({ ...f, email: authEmail }));
+        if (data.orders?.length) mergeOrders(data.orders);
         setOtpErr('');
       } else {
         setOtpErr('Invalid OTP. Please try again.');
@@ -210,6 +211,7 @@ export default function CheckoutPage() {
       payment:     payMethods[payMethod].label,
       status:      'Confirmed',
       date:        new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      isoDate:     new Date().toISOString(),
       address:     addrStr,
       lines:       items.map(it => ({
         name:     it.p.name,

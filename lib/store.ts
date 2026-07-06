@@ -84,6 +84,7 @@ interface GlyaStore {
   orders: Order[];
   addOrder: (o: Order) => void;
   updateOrderStatus: (orderNo: string, status: OrderStatus) => void;
+  mergeOrders: (incoming: Order[]) => void;
 
   stock: Record<number, number>;
   setStock: (id: number, qty: number) => void;
@@ -153,6 +154,20 @@ export const useStore = create<GlyaStore>()(
       updateOrderStatus: (orderNo, status) => set(s => ({
         orders: s.orders.map(o => o.orderNo === orderNo ? { ...o, status } : o)
       })),
+      mergeOrders: (incoming) => set(s => {
+        const map = new Map(s.orders.map(o => [o.orderNo, o]));
+        for (const o of incoming) {
+          if (map.has(o.orderNo)) {
+            map.set(o.orderNo, { ...map.get(o.orderNo)!, status: o.status });
+          } else {
+            map.set(o.orderNo, o);
+          }
+        }
+        return {
+          orders: Array.from(map.values())
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        };
+      }),
 
       stock: {},
       setStock: (id, qty) => set(s => ({ stock: { ...s.stock, [id]: Math.max(0, qty) } })),

@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
@@ -24,9 +24,21 @@ function AccountContent() {
   const initialTab   = TAB_MAP[searchParams.get('tab')?.toLowerCase() || ''] || 'Orders';
   const [tab, setTab] = useState(initialTab);
 
+  const user       = useStore(s => s.user);
   const orders     = useStore(s => s.orders);
+  const mergeOrders = useStore(s => s.mergeOrders);
   const wishlist   = useStore(s => s.wishlist);
   const toggleWish = useStore(s => s.toggleWish);
+  const adminProducts = useStore(s => s.adminProducts);
+
+  // Sync orders from server when user is logged in
+  useEffect(() => {
+    if (!user?.email) return;
+    fetch(`/api/user-orders?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.ok ? r.json() : { orders: [] })
+      .then(data => { if (data.orders?.length) mergeOrders(data.orders); })
+      .catch(() => {});
+  }, [user?.email, mergeOrders]);
 
   const latest     = orders[0];
   const firstName  = latest?.address.firstName || 'Guest';
@@ -36,7 +48,8 @@ function AccountContent() {
   const tier       = points >= 5000 ? 'Platinum' : points >= 1000 ? 'Gold Circle' : 'Silver';
   const tierColor  = tier === 'Platinum' ? '#9B7FBA' : tier === 'Gold Circle' ? '#B08D57' : '#8B8272';
 
-  const wishItems  = catalog.filter(p => wishlist.includes(p.id));
+  const allProducts = adminProducts.length > 0 ? adminProducts : catalog;
+  const wishItems   = allProducts.filter(p => wishlist.includes(p.id));
 
   return (
     <main style={{ maxWidth:1200, margin:'0 auto', padding:'clamp(20px,3vw,48px) clamp(16px,3vw,28px)', animation:'glyaFade 0.5s ease' }}>
