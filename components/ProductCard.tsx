@@ -40,7 +40,7 @@ export default function ProductCard({ product: p, goldRate, size = 'md' }: Props
         )}
         <button
           onClick={e => { e.preventDefault(); toggleWish(p.id); }}
-          style={{ position:'absolute', top:10, right:10, width:34, height:34, borderRadius:'50%', border:'none', background:'rgba(250,247,241,0.9)', cursor:'pointer', fontSize:16, color:wished?'#B08D57':'#211C17', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1 }}
+          style={{ position:'absolute', top:10, right:10, width:34, height:34, borderRadius:'50%', border:'none', background:'rgba(250,247,241,0.9)', cursor:'pointer', fontSize:16, color:wished?'#B08D57':'#211C17', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1, transition:'color .18s, transform .15s' }}
         >
           {wished ? '♥' : '♡'}
         </button>

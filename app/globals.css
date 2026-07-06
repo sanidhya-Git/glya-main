@@ -30,3 +30,10 @@ input:focus, textarea:focus, select:focus { outline: none; }
 .animate-fade { animation: glyaFade 0.5s ease; }
 .animate-up { animation: glyaUp 0.6s ease; }
 .flash { animation: glyaFlash 1.2s ease; }
+
+@keyframes glyaSlideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+button { transition: transform 0.1s ease, opacity 0.1s ease, background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s; }
+button:active:not(:disabled) { transform: scale(0.96); opacity: 0.88; }
+.click-div { transition: color 0.14s, background 0.14s, border-color 0.14s, padding-left 0.14s; }
+.click-div:active { opacity: 0.72; }

@@ -150,7 +150,7 @@ function BrowseContent() {
       <div>
         <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Collection</div>
         <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-          <div onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:!activeCol?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCol?500:400 }}>
+          <div onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:!activeCol?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCol?500:400, transition:'color .14s' }}>
             <span>All</span>
             <span style={{ fontSize:11.5, color:'var(--muted)' }}>{products.length}</span>
           </div>
@@ -159,7 +159,7 @@ function BrowseContent() {
             const count   = products.filter(p => p.col === decoded).length;
             return (
               <div key={c.label} onClick={() => { setActiveCol(decoded); setActiveCat(''); }}
-                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:activeCol===decoded?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCol===decoded?500:400 }}>
+                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:activeCol===decoded?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCol===decoded?500:400, transition:'color .14s' }}>
                 <span>{c.label}</span>
                 <span style={{ fontSize:11.5, color:'var(--muted)' }}>{count}</span>
               </div>
@@ -173,10 +173,10 @@ function BrowseContent() {
         <div>
           <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Category</div>
           <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-            <div onClick={() => setActiveCat('')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:!activeCat?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCat?500:400 }}>All</div>
+            <div onClick={() => setActiveCat('')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:!activeCat?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCat?500:400, transition:'color .14s' }}>All</div>
             {(catList.length > 0 ? catList : adminCategories).map(c => (
               <div key={c} onClick={() => setActiveCat(c)}
-                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', fontSize:13, color:activeCat===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400 }}>
+                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', fontSize:13, color:activeCat===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400, transition:'color .14s' }}>
                 <span>{c}</span>
                 <span style={{ fontSize:11.5, color:'var(--muted)' }}>{products.filter(p => p.cat === c).length || ''}</span>
               </div>
@@ -190,10 +190,10 @@ function BrowseContent() {
         <div>
           <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Gemstone</div>
           <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-            <div onClick={() => setActiveGem('all')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem==='all'?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem==='all'?500:400 }}>All Gemstones</div>
+            <div onClick={() => setActiveGem('all')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem==='all'?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem==='all'?500:400, transition:'color .14s' }}>All Gemstones</div>
             {GEMSTONES.map(g => (
               <div key={g} onClick={() => setActiveGem(g)}
-                style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem===g?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem===g?500:400 }}>
+                style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem===g?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem===g?500:400, transition:'color .14s' }}>
                 {g}
               </div>
             ))}
@@ -207,7 +207,7 @@ function BrowseContent() {
         <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
           {METALS.map(m => (
             <div key={m} onClick={() => setActiveMetal(m)}
-              style={{ cursor:'pointer', fontSize:12.5, padding:'7px 12px', borderRadius:2, border:`1px solid ${chip(activeMetal===m).border}`, background:chip(activeMetal===m).background, color:chip(activeMetal===m).color }}>
+              style={{ cursor:'pointer', fontSize:12.5, padding:'7px 12px', borderRadius:2, border:`1px solid ${chip(activeMetal===m).border}`, background:chip(activeMetal===m).background, color:chip(activeMetal===m).color, transition:'border-color .15s, background .15s, color .15s' }}>
               {m}
             </div>
           ))}
@@ -277,7 +277,7 @@ function BrowseContent() {
 
       {/* Mobile filter panel */}
       {filterOpen && (
-        <div style={{ background:'var(--paper2)', border:'1px solid var(--line)', borderRadius:3, padding:20, marginBottom:20 }}>
+        <div style={{ background:'var(--paper2)', border:'1px solid var(--line)', borderRadius:3, padding:20, marginBottom:20, animation:'glyaSlideDown 0.2s ease' }}>
           <FilterPanel />
         </div>
       )}

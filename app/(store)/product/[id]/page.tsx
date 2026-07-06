@@ -91,7 +91,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginTop:12 }}>
               {images.slice(0,4).map((img, i) => (
                 <div key={i} onClick={() => setGalleryIdx(i)}
-                  style={{ cursor:'pointer', border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`, borderRadius:3, overflow:'hidden', aspectRatio:'1/1', position:'relative', background:'var(--paper2)' }}>
+                  style={{ cursor:'pointer', border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`, borderRadius:3, overflow:'hidden', aspectRatio:'1/1', position:'relative', background:'var(--paper2)', transition:'border-color .18s' }}>
                   <Image src={img} alt={p.name} fill sizes="100px" style={{ objectFit:'cover' }} />
                 </div>
               ))}
@@ -133,7 +133,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
               {karats.map(k => (
                 <div key={k} onClick={() => setKarat(k)}
-                  style={{ cursor:'pointer', padding:'12px 20px', border:`1px solid ${karat===k?'var(--gold)':'var(--line)'}`, background:karat===k?'rgba(176,141,87,0.08)':'transparent', color:karat===k?'#93733E':'var(--ink)', borderRadius:2, fontSize:14 }}>
+                  style={{ cursor:'pointer', padding:'12px 20px', border:`1px solid ${karat===k?'var(--gold)':'var(--line)'}`, background:karat===k?'rgba(176,141,87,0.08)':'transparent', color:karat===k?'#93733E':'var(--ink)', borderRadius:2, fontSize:14, transition:'border-color .15s, background .15s, color .15s' }}>
                   {k === 'PT950' ? 'Platinum 950' : k + ' Yellow Gold'}
                 </div>
               ))}
@@ -150,7 +150,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
                 {si.opts.map(o => (
                   <div key={o} onClick={() => setSize(o)}
-                    style={{ cursor:'pointer', minWidth:46, textAlign:'center', padding:'11px 12px', border:`1px solid ${size===o?'var(--gold)':'var(--line)'}`, background:size===o?'rgba(176,141,87,0.08)':'transparent', color:size===o?'#93733E':'var(--ink)', borderRadius:2, fontSize:14 }}>{o}</div>
+                    style={{ cursor:'pointer', minWidth:46, textAlign:'center', padding:'11px 12px', border:`1px solid ${size===o?'var(--gold)':'var(--line)'}`, background:size===o?'rgba(176,141,87,0.08)':'transparent', color:size===o?'#93733E':'var(--ink)', borderRadius:2, fontSize:14, transition:'border-color .15s, background .15s, color .15s' }}>{o}</div>
                 ))}
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               onMouseLeave={e => (e.currentTarget.style.background='var(--ink)')}
             >Add to cart</button>
             <button onClick={() => toggleWish(p.id)}
-              style={{ cursor:'pointer', width:58, border:'1px solid var(--ink)', background:'transparent', fontSize:20, color:wished?'#B08D57':'var(--ink)', borderRadius:2 }}>
+              style={{ cursor:'pointer', width:58, border:'1px solid var(--ink)', background:'transparent', fontSize:20, color:wished?'#B08D57':'var(--ink)', borderRadius:2, transition:'color .18s, border-color .18s' }}>
               {wished ? '♥' : '♡'}
             </button>
           </div>
@@ -210,11 +210,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {accordions.map((a, i) => (
               <div key={i} style={{ borderBottom:'1px solid var(--line)' }}>
                 <div onClick={() => setOpenAcc(openAcc===i?null:i)}
-                  style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'17px 0', fontFamily:"'Cormorant Garamond',serif", fontSize:21 }}>
+                  style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'17px 0', fontFamily:"'Cormorant Garamond',serif", fontSize:21, transition:'color .15s' }}>
                   {a.title} <span style={{ fontFamily:'Jost', fontSize:18, color:'var(--muted)' }}>{openAcc===i?'−':'+'}</span>
                 </div>
                 {openAcc===i && (
-                  <div style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300 }}>{a.body}</div>
+                  <div style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}>{a.body}</div>
                 )}
               </div>
             ))}
