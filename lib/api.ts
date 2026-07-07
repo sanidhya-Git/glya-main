@@ -1,6 +1,6 @@
 import type { Product } from './catalog';
 
-const BASE = process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
+const BASE = process.env.NEXT_PUBLIC_GLYA_API_BASE ?? process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
 
 interface AdminProductRaw {
   sku: string;
@@ -33,6 +33,15 @@ export interface AdminPost {
   slug: string;
   coverImage?: string;
   body?: string;
+}
+
+export interface AdminBanner {
+  _id: string;
+  title: string;
+  imageUrl: string;
+  link: string;
+  active: boolean;
+  order: number;
 }
 
 export type StorefrontProduct = Product & { images?: string[]; stock?: number };
@@ -101,10 +110,21 @@ export async function fetchAdminPricing(): Promise<{ goldRate24k: number } | nul
 
 export async function fetchAdminJournal(): Promise<AdminPost[]> {
   try {
-    const res = await fetch(`${BASE}/api/journal`, { cache: 'no-store' });
+    const res = await fetch(`${BASE}/api/journal?status=Published`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data: AdminPost[] = await res.json();
     return data.filter(p => p.status === 'Published');
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAdminBanners(): Promise<AdminBanner[]> {
+  try {
+    const res = await fetch(`${BASE}/api/banners?active=1`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data: AdminBanner[] = await res.json();
+    return data.filter(b => b.active && b.imageUrl);
   } catch {
     return [];
   }

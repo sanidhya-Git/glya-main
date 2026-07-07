@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { StorefrontProduct, AdminPost } from './api';
+import type { StorefrontProduct, AdminPost, AdminBanner } from './api';
 
 export interface CartItem {
   key: string;
@@ -100,6 +100,10 @@ interface GlyaStore {
 
   adminCategories: string[];
   setAdminCategories: (cats: string[]) => void;
+
+  adminBanners: AdminBanner[];
+  bannersLoaded: boolean;
+  setAdminBanners: (banners: AdminBanner[]) => void;
 }
 
 export const useStore = create<GlyaStore>()(
@@ -189,6 +193,10 @@ export const useStore = create<GlyaStore>()(
 
       adminCategories: [],
       setAdminCategories: (cats) => set({ adminCategories: cats }),
+
+      adminBanners: [],
+      bannersLoaded: false,
+      setAdminBanners: (banners) => set({ adminBanners: banners, bannersLoaded: true }),
     }),
     {
       name: 'glya-store',

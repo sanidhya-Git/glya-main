@@ -7,6 +7,7 @@ import DataProvider from '@/components/DataProvider';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import BannerCarousel from '@/components/BannerCarousel';
 
 const DEFAULT_CATS = [
   { name: 'Rings',        icon: '◉', href: '/browse?cat=Rings' },
@@ -88,6 +89,9 @@ export default function Home() {
             <Link href="/browse?col=Bridal" style={{ display:'inline-block', padding:'14px 36px', border:'1px solid rgba(237,230,216,0.28)', color:'#EDE6D8', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', textDecoration:'none', borderRadius:2 }}>Bridal edit</Link>
           </div>
         </section>
+
+        {/* ── ADMIN BANNERS ── */}
+        <BannerCarousel />
 
         {/* ── TRUST BAND ── */}
         <div className="trust-grid" style={{ maxWidth:1180, margin:'0 auto', marginTop:'clamp(32px,5vw,56px)', marginLeft:'clamp(16px,3vw,auto)', marginRight:'clamp(16px,3vw,auto)' }}>

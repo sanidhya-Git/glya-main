@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store';
 import type { AdminPost } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 
-const ADMIN_BASE = process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
+const ADMIN_BASE = process.env.NEXT_PUBLIC_GLYA_API_BASE ?? process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
 
 async function fetchAdminJournalPost(id: string): Promise<AdminPost | null> {
   try {

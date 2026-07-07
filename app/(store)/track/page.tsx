@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { inr } from '@/lib/catalog';
 
-const BASE = process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
+const BASE = process.env.NEXT_PUBLIC_GLYA_API_BASE ?? process.env.NEXT_PUBLIC_ADMIN_API ?? 'http://localhost:3001';
 
 const ALL_EVENTS = [
   { status: 'Confirmed',  label: 'Order confirmed',  sub: 'We have received your order and payment.' },
