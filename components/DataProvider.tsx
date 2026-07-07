@@ -10,10 +10,10 @@ export default function DataProvider() {
   const setAdminCategories = useStore(s => s.setAdminCategories);
 
   useEffect(() => {
-    fetchAdminProducts().then(ps   => { if (ps.length > 0)   setAdminProducts(ps); });
-    fetchAdminJournal().then(js    => { if (js.length > 0)   setAdminJournal(js); });
+    fetchAdminProducts().then(ps   => setAdminProducts(ps));
+    fetchAdminJournal().then(js    => setAdminJournal(js));
     fetchAdminPricing().then(pr    => { if (pr?.goldRate24k) setGoldRate(pr.goldRate24k); });
-    fetchAdminCategories().then(cs => { if (cs.length > 0)   setAdminCategories(cs); });
+    fetchAdminCategories().then(cs => setAdminCategories(cs));
   }, [setAdminProducts, setAdminJournal, setGoldRate, setAdminCategories]);
 
   return null;

@@ -91,9 +91,11 @@ interface GlyaStore {
   decrementStock: (lines: OrderLine[]) => void;
 
   adminProducts: StorefrontProduct[];
+  productsLoaded: boolean;
   setAdminProducts: (products: StorefrontProduct[]) => void;
 
   adminJournal: AdminPost[];
+  journalLoaded: boolean;
   setAdminJournal: (posts: AdminPost[]) => void;
 
   adminCategories: string[];
@@ -178,10 +180,12 @@ export const useStore = create<GlyaStore>()(
       }),
 
       adminProducts: [],
-      setAdminProducts: (products) => set({ adminProducts: products }),
+      productsLoaded: false,
+      setAdminProducts: (products) => set({ adminProducts: products, productsLoaded: true }),
 
       adminJournal: [],
-      setAdminJournal: (posts) => set({ adminJournal: posts }),
+      journalLoaded: false,
+      setAdminJournal: (posts) => set({ adminJournal: posts, journalLoaded: true }),
 
       adminCategories: [],
       setAdminCategories: (cats) => set({ adminCategories: cats }),

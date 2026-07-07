@@ -1,16 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { useStore } from '@/lib/store';
-import { catalog, inr, priceOf } from '@/lib/catalog';
+import { inr, priceOf } from '@/lib/catalog';
 
 export default function AdminInventoryPage() {
-  const stock    = useStore(s => s.stock);
-  const setStock = useStore(s => s.setStock);
-  const goldRate = useStore(s => s.goldRate);
+  const stock          = useStore(s => s.stock);
+  const setStock       = useStore(s => s.setStock);
+  const goldRate       = useStore(s => s.goldRate);
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
   const [search,  setSearch]  = useState('');
   const [editing, setEditing] = useState<Record<number, string>>({});
 
-  const filtered = catalog.filter(p =>
+  const filtered = adminProducts.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -25,7 +27,7 @@ export default function AdminInventoryPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(26px,3vw,38px)' }}>Inventory</h1>
-          <p style={{ fontSize: 13.5, color: 'var(--admin-muted)', marginTop: 4 }}>Click a stock number to edit. New products start at 5 units.</p>
+          <p style={{ fontSize: 13.5, color: 'var(--admin-muted)', marginTop: 4 }}>Click a stock number to edit. Stock levels load from the admin API.</p>
         </div>
         <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--admin-muted)', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ padding: '3px 10px', borderRadius: 2, background: 'rgba(180,85,59,0.12)', color: '#B4553B' }}>■ Out of stock</span>
@@ -51,8 +53,16 @@ export default function AdminInventoryPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(p => {
-              const qty     = stock[p.id] ?? 5;
+            {!productsLoaded ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--admin-muted)', fontSize: 13.5 }}>Loading products…</td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--admin-muted)', fontSize: 13.5 }}>No products found.</td>
+              </tr>
+            ) : filtered.map(p => {
+              const qty     = stock[p.id] ?? p.stock ?? 5;
               const isEdit  = p.id in editing;
               const pr      = priceOf(p, p.karat, goldRate);
               const stockBg = qty === 0 ? 'rgba(180,85,59,0.12)' : qty <= 2 ? 'rgba(176,141,87,0.12)' : 'rgba(47,122,91,0.1)';

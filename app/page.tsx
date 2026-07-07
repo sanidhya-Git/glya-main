@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/lib/store';
-import { catalog } from '@/lib/catalog';
 import GoldRateProvider from '@/components/GoldRateProvider';
 import DataProvider from '@/components/DataProvider';
 import Header from '@/components/Header';
@@ -23,13 +22,14 @@ const ICONS = ['◉','◈','○','◎','✦','▲','◇','⬡','◐','◑'];
 export default function Home() {
   const goldRate        = useStore(s => s.goldRate);
   const adminProducts   = useStore(s => s.adminProducts);
+  const productsLoaded  = useStore(s => s.productsLoaded);
   const adminJournal    = useStore(s => s.adminJournal);
   const adminCategories = useStore(s => s.adminCategories);
 
-  const products  = adminProducts.length > 0 ? adminProducts : catalog;
-  const trending  = products.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
-  const newArr    = products.filter(p => p.tag === 'New').slice(0, 4);
-  const featured  = products.filter(p => (p as any).featured || p.tag === 'Bestseller').slice(0, 4);
+  const products = adminProducts;
+  const tagged   = products.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
+  const trending = tagged.length > 0 ? tagged : products.slice(0, 8);
+  const newArr   = products.filter(p => p.tag === 'New').slice(0, 4);
 
   const cats = adminCategories.length > 0
     ? adminCategories.map((name, i) => ({ name, icon: ICONS[i % ICONS.length], href: `/browse?cat=${encodeURIComponent(name)}` }))
@@ -47,6 +47,13 @@ export default function Home() {
         .trust-item { padding:clamp(16px,2.5vw,28px) clamp(12px,2vw,22px); text-align:center; border-right:1px solid var(--line); }
         .trust-item:last-child { border-right:none; }
         .blog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px); }
+        .home-skel {
+          background:linear-gradient(100deg, var(--paper2) 30%, #F3EDE1 50%, var(--paper2) 70%);
+          background-size:200% 100%;
+          animation:homeShimmer 1.8s ease-in-out infinite;
+          border:1px solid var(--line); border-radius:3px;
+        }
+        @keyframes homeShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @media(max-width:900px){
           .home-editorial { grid-template-columns:1fr; }
           .home-editorial-img { min-height:240px; }
@@ -119,7 +126,25 @@ export default function Home() {
         </section>
 
         {/* ── TRENDING ── */}
-        {trending.length > 0 && (
+        {!productsLoaded ? (
+          <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }} aria-busy="true" aria-label="Loading pieces">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+              <div>
+                <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Right now</p>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4, color:'var(--muted)' }}>Curating pieces…</h2>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <div className="home-skel" style={{ width:'100%', aspectRatio:'4/5' }} />
+                  <div className="home-skel" style={{ width:'70%', height:14, marginTop:12, border:'none' }} />
+                  <div className="home-skel" style={{ width:'45%', height:12, marginTop:8, border:'none' }} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : trending.length > 0 ? (
           <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
               <div>
@@ -130,6 +155,19 @@ export default function Home() {
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
               {trending.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+            </div>
+          </section>
+        ) : (
+          <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+            <div style={{ border:'1px solid var(--line)', borderRadius:4, background:'#fff', textAlign:'center', padding:'clamp(48px,7vw,84px) clamp(20px,4vw,40px)' }}>
+              <div style={{ fontSize:34, color:'var(--gold)' }}>◈</div>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(24px,3vw,38px)', fontWeight:400, marginTop:14 }}>Our collection is being curated</h2>
+              <p style={{ color:'var(--muted)', fontSize:14.5, lineHeight:1.7, marginTop:10, maxWidth:420, marginLeft:'auto', marginRight:'auto' }}>
+                New pieces from our Pune atelier will appear here very soon. In the meantime, we would love to hear from you.
+              </p>
+              <Link href="/contact" style={{ display:'inline-block', marginTop:26, padding:'12px 30px', border:'1px solid var(--ink)', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none', color:'var(--ink)', borderRadius:2 }}>
+                Get in touch →
+              </Link>
             </div>
           </section>
         )}
@@ -157,7 +195,7 @@ export default function Home() {
         </section>
 
         {/* ── NEW ARRIVALS ── */}
-        {newArr.length > 0 && (
+        {productsLoaded && newArr.length > 0 && (
           <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
               <div>

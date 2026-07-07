@@ -32,6 +32,7 @@ export interface AdminPost {
   excerpt: string;
   slug: string;
   coverImage?: string;
+  body?: string;
 }
 
 export type StorefrontProduct = Product & { images?: string[]; stock?: number };

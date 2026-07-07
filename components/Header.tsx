@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { catalog } from '@/lib/catalog';
 
 /* ── types ── */
 type NavLink    = { label: string; href: string };
@@ -181,10 +180,9 @@ export default function Header() {
   const adminProducts   = useStore(s => s.adminProducts);
   const adminCategories = useStore(s => s.adminCategories);
   const cartCount       = cart.reduce((a, b) => a + b.qty, 0);
-  const allProducts     = adminProducts.length > 0 ? adminProducts : catalog;
 
   const suggestions = search.trim().length > 1
-    ? allProducts.filter(p =>
+    ? adminProducts.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.col.toLowerCase().includes(search.toLowerCase()) ||
         p.cat.toLowerCase().includes(search.toLowerCase())

@@ -1,17 +1,17 @@
 'use client';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { catalog } from '@/lib/catalog';
 import ProductCard from '@/components/ProductCard';
 
 export default function WishlistPage() {
   const wishlist      = useStore(s => s.wishlist);
   const toggleWish    = useStore(s => s.toggleWish);
-  const adminProducts = useStore(s => s.adminProducts);
-  const goldRate      = useStore(s => s.goldRate);
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
+  const goldRate       = useStore(s => s.goldRate);
 
-  const allProducts = adminProducts.length > 0 ? adminProducts : catalog;
-  const wishItems   = allProducts.filter(p => wishlist.includes(p.id));
+  const loading   = !productsLoaded && wishlist.length > 0;
+  const wishItems = adminProducts.filter(p => wishlist.includes(p.id));
 
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(24px,4vw,52px) clamp(16px,3vw,28px)', animation: 'glyaFade 0.5s ease' }}>
@@ -36,8 +36,16 @@ export default function WishlistPage() {
         )}
       </div>
 
-      {/* EMPTY STATE */}
-      {wishItems.length === 0 ? (
+      {/* LOADING STATE */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 'clamp(60px,8vw,100px) 20px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper2)' }}>
+          <div style={{ fontSize: 48, color: 'var(--gold)', marginBottom: 18, animation: 'glyaFade 1.2s ease infinite alternate' }}>◈</div>
+          <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(24px,3vw,34px)', marginBottom: 10 }}>
+            Gathering your saved pieces
+          </h2>
+          <p style={{ color: 'var(--muted)', fontSize: 15, fontWeight: 300 }}>One moment…</p>
+        </div>
+      ) : wishItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 'clamp(60px,8vw,100px) 20px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper2)' }}>
           <div style={{ fontSize: 56, color: 'var(--line)', marginBottom: 20 }}>♡</div>
           <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(26px,3.5vw,38px)', marginBottom: 12 }}>

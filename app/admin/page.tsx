@@ -1,11 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { catalog, inr } from '@/lib/catalog';
+import { inr } from '@/lib/catalog';
 
 export default function AdminDashboard() {
-  const orders = useStore(s => s.orders);
-  const stock  = useStore(s => s.stock);
+  const orders         = useStore(s => s.orders);
+  const stock          = useStore(s => s.stock);
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
 
   const revenue = orders.filter(o => o.status !== 'Cancelled').reduce((a, o) => a + o.total, 0);
   const orderCount = orders.filter(o => o.status !== 'Cancelled').length;
@@ -15,9 +17,9 @@ export default function AdminDashboard() {
   for (const o of orders) {
     if (o.status === 'Cancelled') continue;
     for (const l of o.lines) {
-      const p = catalog.find(x => x.id === l.productId);
-      if (!p) continue;
-      catTotals[p.cat] = (catTotals[p.cat] || 0) + l.unitPrice * l.qty;
+      const p = adminProducts.find(x => x.id === l.productId);
+      const cat = p?.cat || 'Others';
+      catTotals[cat] = (catTotals[cat] || 0) + l.unitPrice * l.qty;
     }
   }
   const totalCatRevenue = Object.values(catTotals).reduce((a, b) => a + b, 0) || 1;
@@ -28,8 +30,8 @@ export default function AdminDashboard() {
   const recent = orders.slice(0, 5);
 
   const LOW_THRESH = 2;
-  const lowStock = catalog
-    .map(p => ({ p, qty: stock[p.id] ?? 5 }))
+  const lowStock = adminProducts
+    .map(p => ({ p, qty: stock[p.id] ?? p.stock ?? 5 }))
     .filter(x => x.qty <= LOW_THRESH)
     .sort((a, b) => a.qty - b.qty)
     .slice(0, 6);
@@ -64,7 +66,9 @@ export default function AdminDashboard() {
         {/* Category share */}
         <div style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: 4, padding: '22px 24px' }}>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, color: 'var(--admin-text)', marginBottom: 18 }}>Revenue by category</div>
-          {catShare.length === 0 ? (
+          {!productsLoaded ? (
+            <p style={{ color: 'var(--admin-muted)', fontSize: 14 }}>Loading products…</p>
+          ) : catShare.length === 0 ? (
             <p style={{ color: 'var(--admin-muted)', fontSize: 14 }}>No sales yet.</p>
           ) : catShare.map(c => (
             <div key={c.name} style={{ marginBottom: 14 }}>
@@ -85,7 +89,11 @@ export default function AdminDashboard() {
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, color: 'var(--admin-text)' }}>Low stock</div>
             <Link href="/admin/inventory" style={{ fontSize: 12, color: '#B08D57', textDecoration: 'none' }}>Manage →</Link>
           </div>
-          {lowStock.length === 0 ? (
+          {!productsLoaded ? (
+            <p style={{ color: 'var(--admin-muted)', fontSize: 14 }}>Loading products…</p>
+          ) : adminProducts.length === 0 ? (
+            <p style={{ color: 'var(--admin-muted)', fontSize: 14 }}>No products found.</p>
+          ) : lowStock.length === 0 ? (
             <p style={{ color: 'var(--admin-muted)', fontSize: 14 }}>All products well-stocked.</p>
           ) : lowStock.map(x => (
             <div key={x.p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--admin-border)' }}>

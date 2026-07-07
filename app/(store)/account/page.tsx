@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { catalog, inr } from '@/lib/catalog';
+import { inr } from '@/lib/catalog';
 
 const TABS = ['Orders', 'Wishlist', 'Rewards', 'Profile', 'Addresses'];
 
@@ -29,7 +29,8 @@ function AccountContent() {
   const mergeOrders = useStore(s => s.mergeOrders);
   const wishlist   = useStore(s => s.wishlist);
   const toggleWish = useStore(s => s.toggleWish);
-  const adminProducts = useStore(s => s.adminProducts);
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
 
   // Sync orders from server when user is logged in
   useEffect(() => {
@@ -48,8 +49,8 @@ function AccountContent() {
   const tier       = points >= 5000 ? 'Platinum' : points >= 1000 ? 'Gold Circle' : 'Silver';
   const tierColor  = tier === 'Platinum' ? '#9B7FBA' : tier === 'Gold Circle' ? '#B08D57' : '#8B8272';
 
-  const allProducts = adminProducts.length > 0 ? adminProducts : catalog;
-  const wishItems   = allProducts.filter(p => wishlist.includes(p.id));
+  const wishLoading = !productsLoaded && wishlist.length > 0;
+  const wishItems   = adminProducts.filter(p => wishlist.includes(p.id));
 
   return (
     <main style={{ maxWidth:1200, margin:'0 auto', padding:'clamp(20px,3vw,48px) clamp(16px,3vw,28px)', animation:'glyaFade 0.5s ease' }}>
@@ -117,7 +118,12 @@ function AccountContent() {
 
       {tab === 'Wishlist' && (
         <div>
-          {wishItems.length === 0 ? (
+          {wishLoading ? (
+            <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
+              <div style={{ fontSize:40, marginBottom:14, color:'var(--gold)', animation:'glyaFade 1.2s ease infinite alternate' }}>◈</div>
+              <p style={{ fontSize:15 }}>Gathering your saved pieces…</p>
+            </div>
+          ) : wishItems.length === 0 ? (
             <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
               <div style={{ fontSize:40, marginBottom:14 }}>♡</div>
               <p style={{ fontSize:15 }}>Your wishlist is empty.</p>

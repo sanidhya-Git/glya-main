@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { catalog, priceOf, inr, metalLabel, sizeInfo } from '@/lib/catalog';
+import { priceOf, inr, sizeInfo } from '@/lib/catalog';
 import ProductCard from '@/components/ProductCard';
 import type { StorefrontProduct } from '@/lib/api';
 
@@ -15,22 +15,38 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const wishlist      = useStore(s => s.wishlist);
   const toggleWish    = useStore(s => s.toggleWish);
   const addToCart     = useStore(s => s.addToCart);
-  const adminProducts = useStore(s => s.adminProducts);
-  const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
+  const allProducts    = adminProducts;
 
   const p         = allProducts.find(x => x.id === Number(id)) as StorefrontProduct | undefined;
   const images    = (p as StorefrontProduct)?.images ?? [];
 
-  const [karat,     setKarat]     = useState(p?.karat || '18K');
+  const [karatSel,  setKarat]     = useState<string | null>(null);
   const [size,      setSize]      = useState<string | null>(null);
   const [engraving, setEngraving] = useState('');
   const [pincode,   setPincode]   = useState('');
   const [openAcc,   setOpenAcc]   = useState<number | null>(null);
   const [galleryIdx,setGalleryIdx]= useState(0);
 
+  const karat = karatSel || p?.karat || '18K';
+
+  if (!productsLoaded) return (
+    <div style={{ padding:'110px 28px', textAlign:'center', animation:'glyaFade 0.5s ease' }}>
+      <style>{`@keyframes glyaBreathe { 0%,100% { opacity:.45; } 50% { opacity:1; } }`}</style>
+      <div style={{ fontSize:32, color:'var(--gold)', animation:'glyaBreathe 1.8s ease-in-out infinite' }}>◈</div>
+      <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(24px,3vw,32px)', marginTop:14, color:'var(--ink)' }}>Preparing this piece</div>
+      <p style={{ color:'var(--muted)', fontSize:13.5, marginTop:8, letterSpacing:'.04em' }}>Fetching details at today&rsquo;s gold rate…</p>
+    </div>
+  );
+
   if (!p) return (
-    <div style={{ padding:'80px 28px', textAlign:'center', fontFamily:"'Cormorant Garamond',serif", fontSize:30 }}>
-      Product not found.
+    <div style={{ padding:'80px 28px', textAlign:'center' }}>
+      <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:30 }}>Product not found.</div>
+      <p style={{ color:'var(--muted)', fontSize:14, marginTop:10 }}>This piece may have been retired from the collection.</p>
+      <Link href="/browse" style={{ display:'inline-flex', alignItems:'center', marginTop:24, padding:'12px 26px', background:'var(--ink)', color:'#F7F2E8', fontSize:12, letterSpacing:'.12em', textTransform:'uppercase', textDecoration:'none', borderRadius:2 }}>
+        Browse the collection
+      </Link>
     </div>
   );
 

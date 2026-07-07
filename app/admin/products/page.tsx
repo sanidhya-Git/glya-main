@@ -2,17 +2,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { catalog, priceOf, inr } from '@/lib/catalog';
+import { priceOf, inr } from '@/lib/catalog';
 
 export default function AdminProductsPage() {
-  const goldRate = useStore(s => s.goldRate);
-  const stock    = useStore(s => s.stock);
+  const goldRate       = useStore(s => s.goldRate);
+  const stock          = useStore(s => s.stock);
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
   const [search,    setSearch]    = useState('');
   const [catFilter, setCatFilter] = useState('All');
 
-  const cats = ['All', ...Array.from(new Set(catalog.map(p => p.cat)))];
+  const cats = ['All', ...Array.from(new Set(adminProducts.map(p => p.cat)))];
 
-  const filtered = catalog.filter(p => {
+  const filtered = adminProducts.filter(p => {
     const matchCat    = catFilter === 'All' || p.cat === catFilter;
     const q           = search.toLowerCase();
     const matchSearch = !q || p.name.toLowerCase().includes(q) || p.col.toLowerCase().includes(q);
@@ -23,7 +25,7 @@ export default function AdminProductsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(26px,3vw,38px)' }}>Products</h1>
-        <div style={{ fontSize: 13, color: 'var(--admin-muted)' }}>{catalog.length} products · gold {inr(goldRate)}/g</div>
+        <div style={{ fontSize: 13, color: 'var(--admin-muted)' }}>{productsLoaded ? `${adminProducts.length} products` : 'Loading…'} · gold {inr(goldRate)}/g</div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -50,9 +52,17 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(p => {
+            {!productsLoaded ? (
+              <tr>
+                <td colSpan={8} style={{ padding: '28px 14px', textAlign: 'center', color: 'var(--admin-muted)', fontSize: 13.5 }}>Loading products…</td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ padding: '28px 14px', textAlign: 'center', color: 'var(--admin-muted)', fontSize: 13.5 }}>No products found.</td>
+              </tr>
+            ) : filtered.map(p => {
               const pr      = priceOf(p, p.karat, goldRate);
-              const qty     = stock[p.id] ?? 5;
+              const qty     = stock[p.id] ?? p.stock ?? 5;
               const stockBg = qty === 0 ? 'rgba(180,85,59,0.12)' : qty <= 2 ? 'rgba(176,141,87,0.12)' : 'rgba(47,122,91,0.1)';
               const stockC  = qty === 0 ? '#B4553B' : qty <= 2 ? '#B08D57' : '#2F7A5B';
               return (

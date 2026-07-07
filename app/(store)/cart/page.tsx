@@ -3,18 +3,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { catalog, priceOf, inr } from '@/lib/catalog';
-import type { StorefrontProduct } from '@/lib/api';
+import { priceOf, inr } from '@/lib/catalog';
 
 export default function CartPage() {
   const router = useRouter();
   const { cart, changeQty, removeItem, coupon, setCoupon, couponApplied, applyCoupon, giftWrap, toggleGiftWrap, insurance, toggleInsurance } = useStore();
   const goldRate      = useStore(s => s.goldRate);
-  const adminProducts = useStore(s => s.adminProducts);
-  const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
+  const adminProducts  = useStore(s => s.adminProducts);
+  const productsLoaded = useStore(s => s.productsLoaded);
 
   const rawItems = cart.map(it => {
-    const p  = allProducts.find(x => x.id === it.id) as StorefrontProduct | undefined;
+    const p  = adminProducts.find(x => x.id === it.id);
     if (!p) return null;
     const pr  = priceOf(p, it.karat, goldRate);
     const qty = it.qty;
@@ -33,6 +32,19 @@ export default function CartPage() {
   const giftWrapAmt  = giftWrap   ? 299 : 0;
   const insuranceAmt = insurance  ? 499 : 0;
   const total        = subtotal - discount + giftWrapAmt + insuranceAmt;
+
+  if (!productsLoaded && cart.length > 0) {
+    return (
+      <main style={{ maxWidth:1200, margin:'0 auto', padding:'clamp(24px,3vw,48px) clamp(16px,3vw,28px)', animation:'glyaFade 0.5s ease' }}>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(34px,4.4vw,52px)' }}>Your bag</h1>
+        <div style={{ textAlign:'center', padding:'90px 20px' }}>
+          <div style={{ fontSize:44, color:'var(--gold)', animation:'glyaFade 1.2s ease infinite alternate' }}>◈</div>
+          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:30, marginTop:14 }}>Preparing your bag</div>
+          <p style={{ color:'var(--muted)', marginTop:8 }}>Fetching your pieces…</p>
+        </div>
+      </main>
+    );
+  }
 
   if (items.length === 0) {
     return (

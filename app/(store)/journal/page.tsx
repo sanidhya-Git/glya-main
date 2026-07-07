@@ -2,27 +2,39 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { journalPosts } from '@/lib/catalog';
 import { useStore } from '@/lib/store';
+import type { AdminPost } from '@/lib/api';
 
-const tabs = ['All','Buying Guide','Jewelry Education','Care','Bridal','Behind the Design'];
+function readTime(p: AdminPost): string {
+  const text = `${p.body || ''} ${p.excerpt || ''}`.replace(/<[^>]+>/g, ' ');
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const mins = Math.max(2, Math.ceil(words / 200));
+  return `${mins} min read`;
+}
 
 export default function JournalPage() {
-  const adminJournal = useStore(s => s.adminJournal);
-  const allPosts = adminJournal.length > 0
-    ? adminJournal.map(ap => {
-        const sp = journalPosts.find(s => s.id === ap.id);
-        return { ...ap, read: sp?.read || '5 min read', authorRole: sp?.authorRole || '' };
-      })
-    : journalPosts;
+  const adminJournal  = useStore(s => s.adminJournal);
+  const journalLoaded = useStore(s => s.journalLoaded);
+
+  const tabs = ['All', ...Array.from(new Set(adminJournal.map(p => p.category).filter(Boolean)))];
 
   const [tab, setTab] = useState('All');
-  const filtered  = tab === 'All' ? allPosts : allPosts.filter(p => p.category === tab);
+  const filtered  = tab === 'All' ? adminJournal : adminJournal.filter(p => p.category === tab);
   const featured  = filtered[0];
   const restPosts = filtered.slice(1);
 
   return (
     <main style={{ animation:'glyaFade 0.5s ease' }}>
+      <style>{`
+        .journal-skel {
+          background:linear-gradient(100deg, var(--paper2) 30%, #F3EDE1 50%, var(--paper2) 70%);
+          background-size:200% 100%;
+          animation:journalShimmer 1.8s ease-in-out infinite;
+          border:1px solid var(--line); border-radius:3px;
+        }
+        @keyframes journalShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+      `}</style>
+
       {/* MASTHEAD */}
       <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(28px,4vw,56px) clamp(16px,3vw,28px) clamp(20px,3vw,36px)', textAlign:'center' }}>
         <div style={{ fontSize:12, letterSpacing:'0.28em', textTransform:'uppercase', color:'var(--gold-d)', marginBottom:16 }}>The Glya Journal</div>
@@ -34,72 +46,115 @@ export default function JournalPage() {
         </p>
       </section>
 
-      {/* CATEGORY TABS */}
-      <section style={{ maxWidth:1360, margin:'0 auto', padding:'0 clamp(16px,3vw,28px)' }}>
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center', borderBottom:'1px solid var(--line)', paddingBottom:22, overflowX:'auto' }}>
-          {tabs.map(t => (
-            <div key={t} onClick={() => setTab(t)}
-              style={{ cursor:'pointer', fontSize:12.5, letterSpacing:'0.06em', padding:'8px 16px', borderRadius:40, border:`1px solid ${tab===t?'var(--gold)':'var(--line)'}`, background:tab===t?'rgba(176,141,87,0.1)':'transparent', color:tab===t?'#93733E':'var(--ink2)', whiteSpace:'nowrap', flexShrink:0 }}>
-              {t}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURED */}
-      {featured && (
-        <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(24px,4vw,48px) clamp(16px,3vw,28px)' }}>
-          <Link href={`/journal/${featured.id}`} style={{ textDecoration:'none', color:'inherit', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'clamp(24px,4vw,52px)', alignItems:'center', cursor:'pointer' }}>
-            <div style={{ width:'100%', aspectRatio:'4/3', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:60, color:'var(--line)' }}>
-              {(featured as any).coverImage
-                ? <Image src={(featured as any).coverImage} alt={featured.title} fill sizes="(max-width:700px) 100vw,50vw" style={{ objectFit:'cover' }} />
-                : <span>◈</span>
-              }
-            </div>
+      {!journalLoaded ? (
+        /* LOADING */
+        <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(24px,4vw,48px) clamp(16px,3vw,28px) clamp(40px,6vw,72px)' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'clamp(24px,4vw,52px)', alignItems:'center', marginBottom:'clamp(28px,4vw,52px)' }}>
+            <div className="journal-skel" style={{ width:'100%', aspectRatio:'4/3', borderRadius:4 }} />
             <div>
-              <div style={{ fontSize:12, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--gold-d)', marginBottom:14 }}>{featured.category} · Featured</div>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(26px,4vw,48px)', lineHeight:1.05 }}>{featured.title}</h2>
-              <p style={{ maxWidth:460, margin:'18px 0 22px', color:'var(--ink2)', fontSize:15.5, lineHeight:1.7, fontWeight:300 }}>{featured.excerpt}</p>
-              <div style={{ display:'flex', alignItems:'center', gap:14, fontSize:12.5, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', flexWrap:'wrap' }}>
-                <span>{featured.date}</span>
-                <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--gold)', display:'inline-block' }}></span>
-                <span>{(featured as any).read || '5 min read'}</span>
-              </div>
-              <div style={{ marginTop:24, fontSize:13, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold-d)', borderBottom:'1px solid var(--gold)', display:'inline-block', paddingBottom:3 }}>Read the story</div>
+              <div className="journal-skel" style={{ width:150, height:12, marginBottom:18 }} />
+              <div className="journal-skel" style={{ width:'85%', height:40, marginBottom:12 }} />
+              <div className="journal-skel" style={{ width:'70%', height:40, marginBottom:22 }} />
+              <div className="journal-skel" style={{ width:'92%', height:14, marginBottom:10 }} />
+              <div className="journal-skel" style={{ width:'60%', height:14 }} />
             </div>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'clamp(20px,3vw,40px)' }}>
+            {[0,1,2].map(i => (
+              <div key={i}>
+                <div className="journal-skel" style={{ width:'100%', aspectRatio:'3/2' }} />
+                <div className="journal-skel" style={{ width:110, height:11, margin:'16px 0 10px' }} />
+                <div className="journal-skel" style={{ width:'80%', height:22, marginBottom:12 }} />
+                <div className="journal-skel" style={{ width:'95%', height:13 }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign:'center', marginTop:'clamp(28px,4vw,44px)', fontSize:12, letterSpacing:'0.22em', textTransform:'uppercase', color:'var(--muted)' }}>
+            Gathering stories…
+          </div>
+        </section>
+      ) : adminJournal.length === 0 ? (
+        /* EMPTY */
+        <section style={{ maxWidth:640, margin:'0 auto', padding:'clamp(48px,7vw,90px) clamp(16px,3vw,28px)', textAlign:'center' }}>
+          <div style={{ fontSize:44, color:'var(--gold)', marginBottom:20 }}>◈</div>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(24px,3.4vw,36px)', lineHeight:1.1 }}>The journal is quiet, for now.</h2>
+          <p style={{ color:'var(--ink2)', fontSize:15.5, lineHeight:1.7, fontWeight:300, margin:'16px auto 26px', maxWidth:420 }}>
+            New guides and stories from the atelier are on their way. In the meantime, the collections are waiting.
+          </p>
+          <Link href="/browse" style={{ textDecoration:'none', display:'inline-block', background:'var(--ink)', color:'#F7F2E8', padding:'13px 28px', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:2 }}>
+            Explore the collection
           </Link>
         </section>
-      )}
+      ) : (
+        <>
+          {/* CATEGORY TABS */}
+          <section style={{ maxWidth:1360, margin:'0 auto', padding:'0 clamp(16px,3vw,28px)' }}>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center', borderBottom:'1px solid var(--line)', paddingBottom:22, overflowX:'auto' }}>
+              {tabs.map(t => (
+                <div key={t} onClick={() => setTab(t)}
+                  style={{ cursor:'pointer', fontSize:12.5, letterSpacing:'0.06em', padding:'8px 16px', borderRadius:40, border:`1px solid ${tab===t?'var(--gold)':'var(--line)'}`, background:tab===t?'rgba(176,141,87,0.1)':'transparent', color:tab===t?'#93733E':'var(--ink2)', whiteSpace:'nowrap', flexShrink:0 }}>
+                  {t}
+                </div>
+              ))}
+            </div>
+          </section>
 
-      {/* POST GRID */}
-      <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(10px,2vw,20px) clamp(16px,3vw,28px) clamp(40px,6vw,72px)' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'clamp(20px,3vw,40px)' }}>
-          {restPosts.map(p => (
-            <Link key={p.id} href={`/journal/${p.id}`} style={{ textDecoration:'none', color:'inherit', cursor:'pointer' }}>
-              <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
-                {(p as any).coverImage
-                  ? <Image src={(p as any).coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" style={{ objectFit:'cover' }} />
-                  : <span>◈</span>
-                }
+          {/* FEATURED */}
+          {featured && (
+            <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(24px,4vw,48px) clamp(16px,3vw,28px)' }}>
+              <Link href={`/journal/${featured.slug || featured.id}`} style={{ textDecoration:'none', color:'inherit', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'clamp(24px,4vw,52px)', alignItems:'center', cursor:'pointer' }}>
+                <div style={{ width:'100%', aspectRatio:'4/3', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:60, color:'var(--line)' }}>
+                  {featured.coverImage
+                    ? <Image src={featured.coverImage} alt={featured.title} fill sizes="(max-width:700px) 100vw,50vw" style={{ objectFit:'cover' }} />
+                    : <span>◈</span>
+                  }
+                </div>
+                <div>
+                  <div style={{ fontSize:12, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--gold-d)', marginBottom:14 }}>{featured.category} · Featured</div>
+                  <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(26px,4vw,48px)', lineHeight:1.05 }}>{featured.title}</h2>
+                  <p style={{ maxWidth:460, margin:'18px 0 22px', color:'var(--ink2)', fontSize:15.5, lineHeight:1.7, fontWeight:300 }}>{featured.excerpt}</p>
+                  <div style={{ display:'flex', alignItems:'center', gap:14, fontSize:12.5, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', flexWrap:'wrap' }}>
+                    <span>{featured.date}</span>
+                    <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--gold)', display:'inline-block' }}></span>
+                    <span>{readTime(featured)}</span>
+                  </div>
+                  <div style={{ marginTop:24, fontSize:13, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold-d)', borderBottom:'1px solid var(--gold)', display:'inline-block', paddingBottom:3 }}>Read the story</div>
+                </div>
+              </Link>
+            </section>
+          )}
+
+          {/* POST GRID */}
+          <section style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(10px,2vw,20px) clamp(16px,3vw,28px) clamp(40px,6vw,72px)' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'clamp(20px,3vw,40px)' }}>
+              {restPosts.map(p => (
+                <Link key={p.id} href={`/journal/${p.slug || p.id}`} style={{ textDecoration:'none', color:'inherit', cursor:'pointer' }}>
+                  <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
+                    {p.coverImage
+                      ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" style={{ objectFit:'cover' }} />
+                      : <span>◈</span>
+                    }
+                  </div>
+                  <div style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', margin:'16px 0 8px' }}>{p.category}</div>
+                  <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(20px,2vw,24px)', lineHeight:1.15 }}>{p.title}</h3>
+                  <p style={{ color:'var(--ink2)', fontSize:14.5, lineHeight:1.65, fontWeight:300, marginTop:10 }}>{p.excerpt}</p>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:12, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--muted)', marginTop:14, flexWrap:'wrap' }}>
+                    <span>{p.date}</span>
+                    <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--line)', display:'inline-block' }}></span>
+                    <span>{readTime(p)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {filtered.length === 0 && (
+              <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
+                <p style={{ fontSize:15 }}>No posts in this category yet.</p>
+                <button onClick={() => setTab('All')} style={{ marginTop:14, cursor:'pointer', background:'var(--ink)', color:'#F7F2E8', border:'none', padding:'12px 24px', fontSize:12.5, letterSpacing:'0.1em', textTransform:'uppercase', borderRadius:2 }}>View all posts</button>
               </div>
-              <div style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', margin:'16px 0 8px' }}>{p.category}</div>
-              <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(20px,2vw,24px)', lineHeight:1.15 }}>{p.title}</h3>
-              <p style={{ color:'var(--ink2)', fontSize:14.5, lineHeight:1.65, fontWeight:300, marginTop:10 }}>{p.excerpt}</p>
-              <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:12, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--muted)', marginTop:14, flexWrap:'wrap' }}>
-                <span>{p.date}</span>
-                <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--line)', display:'inline-block' }}></span>
-                <span>{(p as any).read || '5 min read'}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
-            <p style={{ fontSize:15 }}>No posts in this category yet.</p>
-            <button onClick={() => setTab('All')} style={{ marginTop:14, cursor:'pointer', background:'var(--ink)', color:'#F7F2E8', border:'none', padding:'12px 24px', fontSize:12.5, letterSpacing:'0.1em', textTransform:'uppercase', borderRadius:2 }}>View all posts</button>
-          </div>
-        )}
-      </section>
+            )}
+          </section>
+        </>
+      )}
 
       {/* NEWSLETTER */}
       <section style={{ background:'var(--paper2)' }}>

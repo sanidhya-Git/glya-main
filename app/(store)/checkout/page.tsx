@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore, Order, OrderLine } from '@/lib/store';
-import { catalog, priceOf, inr } from '@/lib/catalog';
+import { priceOf, inr } from '@/lib/catalog';
 import { createAdminOrder } from '@/lib/api';
 import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 
@@ -33,9 +33,9 @@ export default function CheckoutPage() {
   const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock, mergeOrders } = useStore();
   const goldRate      = useStore(s => s.goldRate);
   const adminProducts = useStore(s => s.adminProducts);
-  const user          = useStore(s => s.user);
-  const setUser       = useStore(s => s.setUser);
-  const allProducts   = adminProducts.length > 0 ? adminProducts : catalog;
+  const user           = useStore(s => s.user);
+  const setUser        = useStore(s => s.setUser);
+  const productsLoaded = useStore(s => s.productsLoaded);
 
   /* ── Auth state ── */
   const [authEmail,  setAuthEmail]  = useState('');
@@ -69,8 +69,10 @@ export default function CheckoutPage() {
   const pincodeError  = form.pin.length > 0 && !pincodeValid;
 
   /* ── Cart totals ── */
-  const items = cart.map(it => {
-    const p  = allProducts.find(x => x.id === it.id) || catalog.find(x => x.id === it.id)!;
+  /* Items whose product no longer exists in the admin catalog are excluded from totals. */
+  const rawItems = cart.map(it => {
+    const p = adminProducts.find(x => x.id === it.id);
+    if (!p) return null;
     const pr = priceOf(p, it.karat, goldRate);
     return {
       ...it, p,
@@ -79,7 +81,8 @@ export default function CheckoutPage() {
       unitPrice:  pr.total,
       metalLabel: it.karat === 'PT950' ? 'Platinum 950' : it.karat + ' Gold',
     };
-  }).filter(it => it.p);
+  });
+  const items = rawItems.filter(Boolean) as NonNullable<typeof rawItems[0]>[];
 
   const subtotal = items.reduce((a, b) => a + b.lineNum, 0);
   let   discount = 0;
@@ -320,6 +323,23 @@ export default function CheckoutPage() {
             <Link href={`/track?order=${orderNo}`} style={{ background: 'var(--ink)', color: '#F7F2E8', padding: '15px 32px', fontSize: 12.5, letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: 2, textDecoration: 'none' }}>Track your order</Link>
             <Link href="/" style={{ background: 'transparent', border: '1px solid var(--ink)', color: 'var(--ink)', padding: '15px 32px', fontSize: 12.5, letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: 2, textDecoration: 'none' }}>Continue shopping</Link>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  /* ════════════════════════════════
+     LOADING — products not yet fetched
+  ════════════════════════════════ */
+  if (!productsLoaded && cart.length > 0) {
+    return (
+      <main style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(24px,3vw,48px) clamp(14px,3vw,28px)', animation: 'glyaFade 0.5s ease' }}>
+        <Link href="/cart" style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none' }}>← Back to bag</Link>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,48px)', marginTop: 8 }}>Checkout</h1>
+        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+          <div style={{ fontSize: 40, color: 'var(--gold)', animation: 'glyaFade 1.2s ease infinite alternate' }}>◈</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, marginTop: 14 }}>Preparing your order</div>
+          <p style={{ color: 'var(--muted)', marginTop: 8, fontSize: 14 }}>Fetching your pieces…</p>
         </div>
       </main>
     );
