@@ -1,7 +1,8 @@
 'use client';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { StorefrontProduct, AdminPost, AdminBanner } from './api';
+import type { StorefrontProduct, AdminPost, AdminBanner, CategoryNode } from './api';
+import { validatePromo } from './api';
 
 export interface CartItem {
   key: string;
@@ -70,8 +71,9 @@ interface GlyaStore {
 
   coupon: string;
   setCoupon: (c: string) => void;
-  couponApplied: { code: string; type?: string; amount?: number; invalid?: boolean } | null;
-  applyCoupon: () => void;
+  couponApplied: { code: string; discount?: number; invalid?: boolean; error?: string } | null;
+  applyCoupon: (orderTotal: number) => Promise<void>;
+  clearCoupon: () => void;
 
   giftWrap: boolean;
   toggleGiftWrap: () => void;
@@ -100,6 +102,9 @@ interface GlyaStore {
 
   adminCategories: string[];
   setAdminCategories: (cats: string[]) => void;
+
+  categoryTree: CategoryNode[];
+  setCategoryTree: (tree: CategoryNode[]) => void;
 
   adminBanners: AdminBanner[];
   bannersLoaded: boolean;
@@ -139,13 +144,14 @@ export const useStore = create<GlyaStore>()(
       coupon: '',
       setCoupon: (c) => set({ coupon: c }),
       couponApplied: null,
-      applyCoupon: () => {
+      applyCoupon: async (orderTotal) => {
         const c = get().coupon.trim().toUpperCase();
         if (!c) { set({ couponApplied: null }); return; }
-        if (c === 'GLYA10') set({ couponApplied: { code: c, type: 'pct' } });
-        else if (c === 'WELCOME') set({ couponApplied: { code: c, amount: 5000 } });
-        else set({ couponApplied: { code: c, invalid: true } });
+        const res = await validatePromo(c, orderTotal);
+        if (res.valid) set({ couponApplied: { code: res.code || c, discount: res.discount ?? 0 } });
+        else set({ couponApplied: { code: c, invalid: true, error: res.error } });
       },
+      clearCoupon: () => set({ coupon: '', couponApplied: null }),
 
       giftWrap: false,
       toggleGiftWrap: () => set(s => ({ giftWrap: !s.giftWrap })),
@@ -193,6 +199,9 @@ export const useStore = create<GlyaStore>()(
 
       adminCategories: [],
       setAdminCategories: (cats) => set({ adminCategories: cats }),
+
+      categoryTree: [],
+      setCategoryTree: (tree) => set({ categoryTree: tree }),
 
       adminBanners: [],
       bannersLoaded: false,

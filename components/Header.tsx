@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
+import type { CategoryNode } from '@/lib/api';
 
 /* ── types ── */
 type NavLink    = { label: string; href: string };
@@ -124,6 +125,37 @@ const NAV: NavItem[] = [
   },
 ];
 
+/* ════════════════════════════════════════
+   DYNAMIC NAV from admin category tree
+   Level 1 → navbar item · Level 2 → mega-menu
+   column · Level 3 → links to /browse?cat=…
+════════════════════════════════════════ */
+/* Links carry the full path (?cat=main&sub=subcategory&type=product-category)
+   so same-named nodes under different parents stay unambiguous. */
+function catHref(l1: string, l2?: string, l3?: string): string {
+  let href = `/browse?cat=${encodeURIComponent(l1)}`;
+  if (l2) href += `&sub=${encodeURIComponent(l2)}`;
+  if (l3) href += `&type=${encodeURIComponent(l3)}`;
+  return href;
+}
+
+function buildNavFromTree(tree: CategoryNode[]): NavItem[] {
+  return tree.map(l1 => {
+    const kids = l1.children ?? [];
+    if (kids.length === 0) {
+      return { label: l1.name, href: catHref(l1.name) };
+    }
+    /* Every sub-category is its own mega-menu column (even before it has
+       product categories) — column order follows the admin `order` field. */
+    const sections: NavSection[] = kids.map(l2 => ({
+      heading: l2.name,
+      allHref: catHref(l1.name, l2.name),
+      items: (l2.children ?? []).map(l3 => ({ label: l3.name, href: catHref(l1.name, l2.name, l3.name) })),
+    }));
+    return { label: l1.name, href: catHref(l1.name), sections };
+  });
+}
+
 /* ── SVG icons ── */
 const IconSearch = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -179,7 +211,13 @@ export default function Header() {
   const wishlist        = useStore(s => s.wishlist);
   const adminProducts   = useStore(s => s.adminProducts);
   const adminCategories = useStore(s => s.adminCategories);
+  const categoryTree    = useStore(s => s.categoryTree);
   const cartCount       = cart.reduce((a, b) => a + b.qty, 0);
+
+  /* Use the admin category tree only when it's actually nested (tree=1 deployed);
+     a flat category list keeps the original hardcoded navbar. */
+  const hasTree = categoryTree.some(n => (n.children ?? []).length > 0);
+  const nav = hasTree ? buildNavFromTree(categoryTree) : NAV;
 
   const suggestions = search.trim().length > 1
     ? adminProducts.filter(p =>
@@ -356,6 +394,7 @@ export default function Header() {
           padding: 8px 0; gap: 10px;
           font-size: 13px; color: var(--ink2); text-decoration: none;
           letter-spacing: .01em; border-radius: 2px;
+          text-transform: capitalize;
           transition: color .14s, padding-left .14s;
         }
         .gh-sec-item svg { opacity: 0; color: var(--gold); flex-shrink: 0; transition: opacity .14s; }
@@ -492,6 +531,7 @@ export default function Header() {
         }
         .gh-mob-lbl {
           font-family:'Cormorant Garamond',serif; font-size:25px; color:var(--ink);
+          text-transform: capitalize;
         }
         .gh-mob-cv { transition:transform .22s ease; color:var(--muted); }
         .gh-mob-cv.open { transform:rotate(180deg); color:var(--gold); }
@@ -500,6 +540,7 @@ export default function Header() {
           padding:0 20px; height:56px;
           font-family:'Cormorant Garamond',serif; font-size:25px;
           color:var(--ink); text-decoration:none; transition:color .16s;
+          text-transform:capitalize;
         }
         .gh-mob-plain:hover { color:var(--gold-d); }
         .gh-mob-panel { overflow:hidden; max-height:0; transition:max-height .3s ease; }
@@ -525,6 +566,7 @@ export default function Header() {
           padding:10px 20px 10px 36px;
           background:var(--paper2); border-top:1px solid var(--line);
           text-decoration:none; color:var(--ink2); font-size:13.5px;
+          text-transform:capitalize;
           transition:color .14s, background .14s;
         }
         .gh-mob-sub:hover { color:var(--ink); background:#EDE6D8; }
@@ -552,7 +594,7 @@ export default function Header() {
 
           {/* Nav */}
           <nav className="gh-nav" aria-label="Main navigation">
-            {NAV.map(n => (
+            {nav.map(n => (
               <div key={n.label} className="gh-ni">
                 <Link href={n.href} className="gh-nl">
                   {n.label}
@@ -664,7 +706,7 @@ export default function Header() {
           </div>
 
           <div style={{ flex: 1 }}>
-            {NAV.map(n => (
+            {nav.map(n => (
               <div key={n.label} className="gh-mob-ni">
                 {n.sections ? (
                   <>
@@ -695,8 +737,8 @@ export default function Header() {
               </div>
             ))}
 
-            {/* Admin categories in mobile menu */}
-            {adminCategories.length > 0 && (
+            {/* Admin categories in mobile menu (hidden once the tree nav takes over) */}
+            {!hasTree && adminCategories.length > 0 && (
               <div className="gh-mob-ni">
                 <div className="gh-mob-top" onClick={() => toggleMob('Categories')}>
                   <span className="gh-mob-lbl">Categories</span>

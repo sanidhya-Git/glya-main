@@ -1,6 +1,6 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { inr, priceOf } from '@/lib/catalog';
@@ -19,7 +19,8 @@ function uniq(vals: string[]): string[] {
   return Array.from(new Set(vals.filter(Boolean)));
 }
 
-function buildTitle(col: string, cat: string, metal: string, gem: string, q: string): string {
+function buildTitle(col: string, cats: string[], metal: string, gem: string, q: string): string {
+  const cat = cats[cats.length - 1] ?? '';
   if (q) return `Search: "${q}"`;
   if (gem && gem !== 'all') return gem;
   if (gem === 'all') return 'Gemstones';
@@ -27,16 +28,17 @@ function buildTitle(col: string, cat: string, metal: string, gem: string, q: str
     if (cat) return `${col} — ${cat}`;
     return col;
   }
+  if (cat) return cat;
   if (metal && metal !== 'All') return `${metal} Jewellery`;
   return 'All Jewellery';
 }
 
-function buildBreadcrumb(col: string, cat: string, metal: string, gem: string): string[] {
+function buildBreadcrumb(col: string, cats: string[], metal: string, gem: string): string[] {
   const crumbs = ['Home'];
   if (gem) crumbs.push('Gemstones');
   if (col) crumbs.push(col);
-  if (cat) crumbs.push(cat);
-  if (!col && !cat && !gem && metal && metal !== 'All') crumbs.push(`${metal} Jewellery`);
+  crumbs.push(...cats);
+  if (!col && cats.length === 0 && !gem && metal && metal !== 'All') crumbs.push(`${metal} Jewellery`);
   return crumbs;
 }
 
@@ -54,6 +56,8 @@ function BrowseContent() {
   /* read all URL params on init */
   const urlCol   = dp(searchParams.get('col'));
   const urlCat   = dp(searchParams.get('cat'));
+  const urlSub   = dp(searchParams.get('sub'));
+  const urlType  = dp(searchParams.get('type'));
   const urlMetal = dp(searchParams.get('metal'));
   const urlGem   = dp(searchParams.get('gem'));
   const urlTag   = dp(searchParams.get('tag'));
@@ -61,10 +65,22 @@ function BrowseContent() {
 
   const [activeCol,   setActiveCol]   = useState(urlCol);
   const [activeCat,   setActiveCat]   = useState(urlCat);
+  const [activeSub,   setActiveSub]   = useState(urlSub);
+  const [activeType,  setActiveType]  = useState(urlType);
   const [activeMetal, setActiveMetal] = useState(urlMetal || 'All');
   const [activeGem,   setActiveGem]   = useState(urlGem);
   const [sort,        setSort]        = useState('featured');
   const [filterOpen,  setFilterOpen]  = useState(false);
+
+  /* Re-sync filters when a nav link changes the URL while already on /browse */
+  useEffect(() => {
+    setActiveCol(urlCol);
+    setActiveCat(urlCat);
+    setActiveSub(urlSub);
+    setActiveType(urlType);
+    setActiveMetal(urlMetal || 'All');
+    setActiveGem(urlGem);
+  }, [urlCol, urlCat, urlSub, urlType, urlMetal, urlGem]);
 
   /* ── filter options derived from API data ── */
   const collections = uniq(products.map(p => p.col));
@@ -108,8 +124,13 @@ function BrowseContent() {
   /* collection */
   if (activeCol) list = list.filter(p => p.col === activeCol);
 
-  /* subcategory */
-  if (activeCat) list = list.filter(p => p.cat === activeCat || p.name.toLowerCase().includes(activeCat.toLowerCase()));
+  /* category hierarchy — a name at any level matches the product's catPath
+     (main / sub / product-category); legacy products fall back to p.cat */
+  const inCatPath = (p: (typeof products)[number], name: string) =>
+    (p.catPath && p.catPath.includes(name)) || p.cat === name;
+  if (activeCat)  list = list.filter(p => inCatPath(p, activeCat) || p.name.toLowerCase().includes(activeCat.toLowerCase()));
+  if (activeSub)  list = list.filter(p => inCatPath(p, activeSub));
+  if (activeType) list = list.filter(p => inCatPath(p, activeType));
 
   /* metal */
   if (activeMetal && activeMetal !== 'All') {
@@ -141,14 +162,15 @@ function BrowseContent() {
   if (sort === 'rating')    list.sort((a, b) => b.rating - a.rating);
   if (sort === 'new')       list.sort((a, b) => (b.tag==='New'?1:0)-(a.tag==='New'?1:0));
 
-  const pageTitle  = buildTitle(activeCol, activeCat, activeMetal, activeGem, urlQ);
-  const crumbs     = buildBreadcrumb(activeCol, activeCat, activeMetal, activeGem);
+  const catLevels  = [activeCat, activeSub, activeType].filter(Boolean);
+  const pageTitle  = buildTitle(activeCol, catLevels, activeMetal, activeGem, urlQ);
+  const crumbs     = buildBreadcrumb(activeCol, catLevels, activeMetal, activeGem);
   const catList    = activeCol ? uniq(products.filter(p => p.col === activeCol).map(p => p.cat)) : [];
   const showGems   = !!activeGem;
   const rate22     = inr(Math.round(goldRate * 0.916));
-  const activeCount = (activeCol?1:0)+(activeCat?1:0)+((activeMetal&&activeMetal!=='All')?1:0)+(activeGem?1:0);
+  const activeCount = (activeCol?1:0)+(activeCat?1:0)+(activeSub?1:0)+(activeType?1:0)+((activeMetal&&activeMetal!=='All')?1:0)+(activeGem?1:0);
 
-  function resetAll() { setActiveCol(''); setActiveCat(''); setActiveMetal('All'); setActiveGem(''); setFilterOpen(false); }
+  function resetAll() { setActiveCol(''); setActiveCat(''); setActiveSub(''); setActiveType(''); setActiveMetal('All'); setActiveGem(''); setFilterOpen(false); }
 
   function chip(active: boolean) {
     return {
@@ -282,7 +304,9 @@ function BrowseContent() {
       {activeCount > 0 && (
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:20 }}>
           {activeCol   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeCol} <button onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeCat   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeCat} <button onClick={() => setActiveCat('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeCat   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeCat} <button onClick={() => { setActiveCat(''); setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeSub   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeSub} <button onClick={() => { setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeType  && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeType} <button onClick={() => setActiveType('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
           {activeMetal && activeMetal !== 'All' && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeMetal} <button onClick={() => setActiveMetal('All')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
           {activeGem   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeGem === 'all' ? 'All Gemstones' : activeGem} <button onClick={() => setActiveGem('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
           <button onClick={resetAll} style={{ fontSize:12, padding:'5px 11px', background:'none', border:'1px solid var(--line)', borderRadius:20, cursor:'pointer', color:'var(--muted)', letterSpacing:'.06em' }}>Clear all</button>

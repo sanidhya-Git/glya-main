@@ -6,7 +6,6 @@ import { priceOf, inr } from '@/lib/catalog';
 import { createAdminOrder } from '@/lib/api';
 import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 
-const steps = ['Address', 'Delivery', 'Payment', 'Review'];
 const shipOptions = [
   { label: 'Insured standard',  desc: '3–5 business days', cost: 0 },
   { label: 'Insured express',   desc: '1–2 business days', cost: 299 },
@@ -30,26 +29,19 @@ const selectStyle: React.CSSProperties = {
 };
 
 export default function CheckoutPage() {
-  const { cart, giftWrap, insurance, couponApplied, clearCart, setLastOrder, addOrder, decrementStock, mergeOrders } = useStore();
+  const { cart, giftWrap, insurance, couponApplied, clearCoupon, clearCart, setLastOrder, addOrder, decrementStock } = useStore();
   const goldRate      = useStore(s => s.goldRate);
   const adminProducts = useStore(s => s.adminProducts);
   const user           = useStore(s => s.user);
   const setUser        = useStore(s => s.setUser);
   const productsLoaded = useStore(s => s.productsLoaded);
 
-  /* ── Auth state ── */
-  const [authEmail,  setAuthEmail]  = useState('');
-  const [otpSent,    setOtpSent]    = useState(false);
-  const [otpToken,   setOtpToken]   = useState('');
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [otpErr,     setOtpErr]     = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
-
   /* ── Checkout state ── */
-  const [step,      setStep]      = useState(1);
   const [shipIdx,   setShipIdx]   = useState(0);
   const [payMethod, setPayMethod] = useState(0);
   const [placed,    setPlaced]    = useState(false);
+  const [placing,   setPlacing]   = useState(false);
+  const [orderErr,  setOrderErr]  = useState('');
   const [orderNo,   setOrderNo]   = useState('');
   const [capturedTotal, setCapturedTotal] = useState(0);
 
@@ -87,65 +79,12 @@ export default function CheckoutPage() {
   const subtotal = items.reduce((a, b) => a + b.lineNum, 0);
   let   discount = 0;
   if (couponApplied && !couponApplied.invalid) {
-    if (couponApplied.type === 'pct') discount = Math.min(Math.round(subtotal * 0.10), 25000);
-    else                               discount = Math.min(couponApplied.amount || 0, subtotal);
+    discount = Math.min(couponApplied.discount ?? 0, subtotal);
   }
   const shipCost = shipOptions[shipIdx].cost;
   const wrapCost = giftWrap    ? 299 : 0;
   const insCost  = insurance   ? 499 : 0;
   const total    = subtotal - discount + shipCost + wrapCost + insCost;
-
-  /* ── OTP handlers ── */
-  async function handleSendOtp() {
-    setOtpLoading(true);
-    setOtpErr('');
-    try {
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: authEmail }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setOtpErr(data.error || 'Failed to send OTP. Please try again.');
-      } else {
-        setOtpToken(data.token);
-        setOtpSent(true);
-        setEnteredOtp('');
-      }
-    } catch {
-      setOtpErr('Network error. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    setOtpLoading(true);
-    setOtpErr('');
-    try {
-      const res = await fetch('/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: authEmail, otp: enteredOtp, token: otpToken }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setOtpErr(data.error || 'Verification failed. Please try again.');
-      } else if (data.success) {
-        setUser({ email: authEmail });
-        setForm(f => ({ ...f, email: authEmail }));
-        if (data.orders?.length) mergeOrders(data.orders);
-        setOtpErr('');
-      } else {
-        setOtpErr('Invalid OTP. Please try again.');
-      }
-    } catch {
-      setOtpErr('Network error. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
-  }
 
   /* ── Address step validation ── */
   function addressComplete() {
@@ -157,7 +96,10 @@ export default function CheckoutPage() {
   }
 
   /* ── Place order ── */
-  function placeOrder() {
+  async function placeOrder() {
+    if (placing) return;
+    setPlacing(true);
+    setOrderErr('');
     const no = 'GLY' + Math.floor(700000 + Math.random() * 99999);
     const lines: OrderLine[] = items.map(it => ({
       productId: it.p.id,
@@ -195,16 +137,9 @@ export default function CheckoutPage() {
       payment:        payMethods[payMethod].label,
       status:         'Confirmed',
     };
-    addOrder(order);
-    decrementStock(lines);
-    setCapturedTotal(total);
-    setOrderNo(no);
-    setLastOrder(no);
-    clearCart();
-    setPlaced(true);
-
     const addrStr = [form.addr1, form.addr2, form.city, form.state, countryInfo?.name, form.pin].filter(Boolean).join(', ');
-    createAdminOrder({
+    const hasPromo = Boolean(couponApplied && !couponApplied.invalid && discount > 0);
+    const result = await createAdminOrder({
       no,
       customer:    `${form.first} ${form.last}`.trim() || 'Guest',
       email:       form.email,
@@ -225,78 +160,65 @@ export default function CheckoutPage() {
       subtotalStr:  inr(subtotal),
       discountStr:  discount > 0 ? inr(discount) : '₹0',
       shippingStr:  shipCost === 0 ? 'Free' : inr(shipCost),
+      ...(hasPromo ? {
+        promoCode:     couponApplied!.code,
+        promoDiscount: discount,
+        subtotalNum:   total + discount,
+      } : {}),
     });
-  }
 
-  /* ════════════════════════════════
-     AUTH GATE — shown if not logged in
-  ════════════════════════════════ */
-  if (!user) {
-    return (
-      <main style={{ maxWidth: 480, margin: '0 auto', padding: 'clamp(40px,6vw,80px) clamp(20px,5vw,40px)', animation: 'glyaFade 0.5s ease' }}>
-        <Link href="/cart" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none', display: 'inline-block', marginBottom: 28 }}>← Back to bag</Link>
-        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,42px)' }}>Verify your email</h1>
-        <p style={{ color: 'var(--ink2)', fontSize: 14, marginTop: 10, marginBottom: 32, lineHeight: 1.75 }}>
-          A verified email is required to place an order. We'll send your invoice and order updates to this address.
-        </p>
+    /* Promo went invalid between apply and checkout — server rejected the order. */
+    if (result.promoError) {
+      clearCoupon();
+      setOrderErr(`${result.promoError} The code has been removed — please review your total and try again.`);
+      setPlacing(false);
+      return;
+    }
 
-        {!otpSent ? (
-          <div style={{ display: 'grid', gap: 14 }}>
-            <input
-              type="email"
-              placeholder="Email address"
-              value={authEmail}
-              onChange={e => setAuthEmail(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && authEmail.includes('@') && !otpLoading) handleSendOtp(); }}
-              style={inputStyle}
-              autoFocus
-              disabled={otpLoading}
-            />
-            {otpErr && <div style={{ fontSize: 13, color: '#C0392B' }}>{otpErr}</div>}
-            <button
-              onClick={handleSendOtp}
-              disabled={!authEmail.includes('@') || authEmail.length < 5 || otpLoading}
-              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!authEmail.includes('@') || authEmail.length < 5 || otpLoading) ? 0.5 : 1 }}
-            >
-              {otpLoading ? 'Sending…' : 'Send OTP'}
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: 14 }}>
-            <div style={{ padding: '14px 16px', background: 'rgba(47,74,63,0.08)', border: '1px solid rgba(47,74,63,0.2)', borderRadius: 3 }}>
-              <div style={{ fontSize: 13.5, color: 'var(--em)' }}>Verification code sent to <b>{authEmail}</b></div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>Check your inbox and enter the 6-digit code below.</div>
-            </div>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="Enter 6-digit code"
-              value={enteredOtp}
-              onChange={e => { setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpErr(''); }}
-              onKeyDown={e => { if (e.key === 'Enter' && enteredOtp.length === 6 && !otpLoading) handleVerifyOtp(); }}
-              maxLength={6}
-              style={{ ...inputStyle, letterSpacing: '0.28em', fontSize: 18, textAlign: 'center' }}
-              autoFocus
-              disabled={otpLoading}
-            />
-            {otpErr && <div style={{ fontSize: 13, color: '#C0392B' }}>{otpErr}</div>}
-            <button
-              onClick={handleVerifyOtp}
-              disabled={enteredOtp.length !== 6 || otpLoading}
-              style={{ cursor: 'pointer', background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: '16px', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (enteredOtp.length !== 6 || otpLoading) ? 0.5 : 1 }}
-            >
-              {otpLoading ? 'Verifying…' : 'Verify code'}
-            </button>
-            <button
-              onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpErr(''); setOtpToken(''); }}
-              style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 0, textAlign: 'left' }}
-            >
-              ← Change email
-            </button>
-          </div>
-        )}
-      </main>
-    );
+    addOrder(order);
+    decrementStock(lines);
+    setCapturedTotal(total);
+    setOrderNo(no);
+    setLastOrder(no);
+    clearCart();
+    setPlaced(true);
+    setPlacing(false);
+
+    /* Auto-create the account from the order details — no OTP or verification. */
+    if (!user) setUser({ email: form.email });
+
+    /* Fire-and-forget: full invoice to the email the customer provided. */
+    const eta = new Date();
+    eta.setDate(eta.getDate() + (shipIdx === 0 ? 5 : shipIdx === 1 ? 2 : 1));
+    const viewOrderUrl = `${window.location.origin}/track?order=${encodeURIComponent(no)}`;
+    fetch('/api/send-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:        form.email,
+        name:         `${form.first} ${form.last}`.trim(),
+        orderNo:      no,
+        date:         new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+        etaDate:      eta.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' }),
+        address:      addrStr,
+        payment:      payMethods[payMethod].label,
+        delivery:     shipOptions[shipIdx].label,
+        lines:        items.map(it => ({
+          name:     it.p.name,
+          meta:     `${it.metalLabel}${it.size ? ' · Size ' + it.size : ''}${it.engraving ? ' · Engraved' : ''}`,
+          qty:      it.qty,
+          priceStr: it.lineStr,
+        })),
+        subtotalStr:  inr(subtotal),
+        discountStr:  discount > 0 ? inr(discount) : '',
+        promoCode:    hasPromo ? couponApplied!.code : '',
+        shippingStr:  shipCost === 0 ? 'Free' : inr(shipCost),
+        giftWrapStr:  wrapCost > 0 ? inr(wrapCost) : '',
+        insuranceStr: insCost > 0 ? inr(insCost) : '',
+        totalStr:     inr(total),
+        viewOrderUrl,
+      }),
+    }).catch(() => {});
   }
 
   /* ════════════════════════════════
@@ -313,6 +235,9 @@ export default function CheckoutPage() {
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(32px,4vw,48px)', marginTop: 24 }}>Thank you.</h1>
           <p style={{ color: 'var(--ink2)', fontSize: 16, marginTop: 12, lineHeight: 1.7 }}>
             Your order <b>{orderNo}</b> is confirmed. A certificate of authenticity and GST invoice are on their way to {form.email}.
+          </p>
+          <p style={{ color: 'var(--muted)', fontSize: 13.5, marginTop: 10, lineHeight: 1.7 }}>
+            We&apos;ve created your GLYA account with this email — find this order any time under <Link href="/account" style={{ color: 'var(--gold-d)' }}>Account</Link>.
           </p>
           <div style={{ background: 'var(--paper2)', borderRadius: 4, padding: 22, marginTop: 28, textAlign: 'left', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
             <div><div style={{ fontSize: 11.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>Total paid</div><div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>{inr(capturedTotal)}</div></div>
@@ -362,35 +287,28 @@ export default function CheckoutPage() {
         .co-select-wrap::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--muted); font-size:12px; }
       `}</style>
 
-      {/* Logged-in indicator */}
+      {/* Logged-in indicator (guests check out without an account) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
         <Link href="/cart" style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none' }}>← Back to bag</Link>
-        <div style={{ fontSize: 12.5, color: 'var(--em)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--em)', display: 'inline-block' }}></span>
-          {user.email}
-          <button onClick={() => setUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0 }}>Sign out</button>
-        </div>
+        {user ? (
+          <div style={{ fontSize: 12.5, color: 'var(--em)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--em)', display: 'inline-block' }}></span>
+            {user.email}
+            <button onClick={() => setUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0 }}>Sign out</button>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Checking out as guest</div>
+        )}
       </div>
 
       <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,48px)', marginBottom: 8 }}>Checkout</h1>
 
-      {/* Steps */}
-      <div style={{ display: 'flex', gap: 6, margin: '16px 0 28px', flexWrap: 'wrap' }}>
-        {steps.map((s, i) => (
-          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 110 }}>
-            <span style={{ width: 28, height: 28, borderRadius: '50%', border: `1.5px solid ${i + 1 === step ? 'var(--ink)' : i + 1 < step ? 'var(--gold)' : 'var(--line)'}`, background: i + 1 < step ? 'var(--gold)' : i + 1 === step ? 'var(--ink)' : 'transparent', color: i + 1 <= step ? '#fff' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>
-              {i + 1 < step ? '✓' : i + 1}
-            </span>
-            <span style={{ fontSize: 11.5, letterSpacing: '0.07em', textTransform: 'uppercase', color: i + 1 === step ? 'var(--ink)' : 'var(--muted)', whiteSpace: 'nowrap' }}>{s}</span>
-          </div>
-        ))}
-      </div>
+      <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '4px 0 26px' }}>Fill in your details below and pay in one step — no account needed.</p>
 
       <div className="co-layout">
         <div>
-          {/* ── STEP 1: Address ── */}
-          {step === 1 && (
-            <div style={{ display: 'grid', gap: 13 }}>
+          {/* ── Address ── */}
+          <div style={{ display: 'grid', gap: 13 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery address</div>
 
               <div className="co-name-grid">
@@ -467,12 +385,10 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-            </div>
-          )}
+          </div>
 
-          {/* ── STEP 2: Delivery ── */}
-          {step === 2 && (
-            <div style={{ display: 'grid', gap: 14 }}>
+          {/* ── Delivery ── */}
+          <div style={{ display: 'grid', gap: 14, marginTop: 36 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery method</div>
               {shipOptions.map((o, i) => (
                 <div key={i} onClick={() => setShipIdx(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${shipIdx === i ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '18px 20px' }}>
@@ -483,12 +399,10 @@ export default function CheckoutPage() {
                   <div style={{ fontSize: 14, color: 'var(--em)' }}>{o.cost === 0 ? 'Free' : inr(o.cost)}</div>
                 </div>
               ))}
-            </div>
-          )}
+          </div>
 
-          {/* ── STEP 3: Payment ── */}
-          {step === 3 && (
-            <div style={{ display: 'grid', gap: 12 }}>
+          {/* ── Payment ── */}
+          <div style={{ display: 'grid', gap: 12, marginTop: 36 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Payment method</div>
               {payMethods.map((p, i) => (
                 <div key={i} onClick={() => setPayMethod(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${payMethod === i ? 'var(--gold)' : 'var(--line)'}`, background: payMethod === i ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '16px 18px' }}>
@@ -500,42 +414,28 @@ export default function CheckoutPage() {
                 </div>
               ))}
               <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>🔒 Payments are encrypted and verified.</div>
-            </div>
-          )}
-
-          {/* ── STEP 4: Review ── */}
-          {step === 4 && (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Review &amp; place order</div>
-              {items.map(i => (
-                <div key={i.key} style={{ display: 'flex', gap: 14, alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: 14 }}>
-                  <div style={{ width: 60, height: 70, flexShrink: 0, background: 'var(--paper2)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--line)' }}>◈</div>
-                  <div style={{ flex: 1 }}><div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18 }}>{i.p.name}</div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{i.metalLabel} · Qty {i.qty}</div></div>
-                  <div style={{ fontSize: 15 }}>{i.lineStr}</div>
-                </div>
-              ))}
-              <div style={{ background: 'var(--paper2)', borderRadius: 3, padding: '16px 18px', fontSize: 14, color: 'var(--ink2)', lineHeight: 1.7 }}>
-                <div>Delivering to {form.addr1 || 'your address'}, {form.city}{form.state ? ', ' + form.state : ''}, {countryInfo?.name}</div>
-                <div style={{ marginTop: 4 }}>Via {shipOptions[shipIdx].label}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation buttons */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
-            {step > 1 && (
-              <button onClick={() => setStep(s => s - 1)} style={{ cursor: 'pointer', background: 'transparent', border: '1px solid var(--ink)', color: 'var(--ink)', padding: '16px 28px', fontSize: 12.5, letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: 2 }}>Back</button>
-            )}
-            <button
-              onClick={step === 4 ? placeOrder : () => setStep(s => s + 1)}
-              disabled={step === 1 && !addressComplete()}
-              style={{ cursor: 'pointer', flex: 1, background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: 16, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (step === 1 && !addressComplete()) ? 0.5 : 1 }}
-              onMouseEnter={e => { if (!(step === 1 && !addressComplete())) (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-d)'; }}
-              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ink)')}
-            >
-              {step === 4 ? 'Place order' : step === 1 ? 'Continue to delivery' : step === 2 ? 'Continue to payment' : 'Review order'}
-            </button>
           </div>
+
+          {/* ── Pay now ── */}
+          {orderErr && (
+            <div style={{ marginTop: 24, padding: '13px 16px', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: 3, fontSize: 13.5, color: '#C0392B', lineHeight: 1.6 }}>
+              {orderErr}
+            </div>
+          )}
+          <button
+            onClick={placeOrder}
+            disabled={!addressComplete() || placing}
+            style={{ cursor: 'pointer', width: '100%', marginTop: orderErr ? 14 : 30, background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: 17, fontSize: 13.5, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!addressComplete() || placing) ? 0.5 : 1 }}
+            onMouseEnter={e => { if (addressComplete() && !placing) (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-d)'; }}
+            onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ink)')}
+          >
+            {placing ? 'Processing…' : `Pay now · ${inr(total)}`}
+          </button>
+          {!addressComplete() && (
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 10, textAlign: 'center' }}>
+              Fill in your name, email, mobile and address to continue
+            </div>
+          )}
         </div>
 
         {/* Summary sidebar */}

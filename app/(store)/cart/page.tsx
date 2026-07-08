@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -7,7 +8,8 @@ import { priceOf, inr } from '@/lib/catalog';
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, changeQty, removeItem, coupon, setCoupon, couponApplied, applyCoupon, giftWrap, toggleGiftWrap, insurance, toggleInsurance } = useStore();
+  const { cart, changeQty, removeItem, coupon, setCoupon, couponApplied, applyCoupon, clearCoupon, giftWrap, toggleGiftWrap, insurance, toggleInsurance } = useStore();
+  const [applying, setApplying] = useState(false);
   const goldRate      = useStore(s => s.goldRate);
   const adminProducts  = useStore(s => s.adminProducts);
   const productsLoaded = useStore(s => s.productsLoaded);
@@ -26,8 +28,7 @@ export default function CartPage() {
   const subtotal    = items.reduce((a, b) => a + b.lineNum, 0);
   let   discount    = 0;
   if (couponApplied && !couponApplied.invalid) {
-    if (couponApplied.type === 'pct') discount = Math.min(Math.round(subtotal * 0.10), 25000);
-    else                               discount = Math.min(couponApplied.amount || 0, subtotal);
+    discount = Math.min(couponApplied.discount ?? 0, subtotal);
   }
   const giftWrapAmt  = giftWrap   ? 299 : 0;
   const insuranceAmt = insurance  ? 499 : 0;
@@ -118,12 +119,22 @@ export default function CartPage() {
           <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginBottom:18 }}>Order summary</div>
           <div style={{ display:'flex', gap:8, marginBottom:18 }}>
             <input value={coupon} onChange={e => setCoupon(e.target.value)} placeholder="Promo code"
+              onKeyDown={async e => { if (e.key === 'Enter' && coupon.trim() && !applying) { setApplying(true); await applyCoupon(subtotal); setApplying(false); } }}
               style={{ flex:1, border:'1px solid var(--line)', background:'var(--paper)', padding:'12px 14px', fontSize:13.5, borderRadius:2 }} />
-            <button onClick={applyCoupon} style={{ cursor:'pointer', background:'var(--ink)', color:'#F7F2E8', border:'none', padding:'0 20px', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', borderRadius:2 }}>Apply</button>
+            <button
+              onClick={async () => { if (applying) return; setApplying(true); await applyCoupon(subtotal); setApplying(false); }}
+              disabled={applying}
+              style={{ cursor:'pointer', background:'var(--ink)', color:'#F7F2E8', border:'none', padding:'0 20px', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', borderRadius:2, opacity:applying?0.6:1 }}
+            >{applying ? '…' : 'Apply'}</button>
           </div>
           {couponApplied && (
-            <div style={{ fontSize:12.5, color:couponApplied.invalid?'#B4553B':'var(--em)', margin:'-8px 0 16px' }}>
-              {couponApplied.invalid ? `"${couponApplied.code}" is not a valid code` : `Code ${couponApplied.code} applied!`}
+            <div style={{ fontSize:12.5, color:couponApplied.invalid?'#B4553B':'var(--em)', margin:'-8px 0 16px', display:'flex', justifyContent:'space-between', gap:8 }}>
+              <span>
+                {couponApplied.invalid
+                  ? (couponApplied.error || `"${couponApplied.code}" is not a valid code`)
+                  : `Code ${couponApplied.code} applied — ${inr(discount)} off`}
+              </span>
+              <button onClick={clearCoupon} style={{ cursor:'pointer', background:'none', border:'none', color:'var(--muted)', fontSize:12, textDecoration:'underline', padding:0, flexShrink:0 }}>Remove</button>
             </div>
           )}
           <div style={{ display:'flex', flexDirection:'column', gap:12, fontSize:14.5, borderTop:'1px solid var(--line)', paddingTop:18 }}>

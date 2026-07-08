@@ -6,6 +6,8 @@ interface AdminProductRaw {
   sku: string;
   name: string;
   cat: string;
+  cat2?: string;
+  cat3?: string;
   collection: string;
   metal: string;
   weight: number;
@@ -44,7 +46,9 @@ export interface AdminBanner {
   order: number;
 }
 
-export type StorefrontProduct = Product & { images?: string[]; stock?: number };
+/* catPath = [main, sub, product-category] names from the admin tree, e.g.
+   ["Gold", "BK Gold", "Pendants"]. `cat` stays the deepest (display) name. */
+export type StorefrontProduct = Product & { images?: string[]; stock?: number; catPath?: string[] };
 
 function parseMetal(metal: string): { metal: string; karat: string } {
   const m = metal.trim();
@@ -67,10 +71,12 @@ function firstTag(tags?: string): string {
 
 export function adminToStorefront(p: AdminProductRaw): StorefrontProduct {
   const { metal, karat } = parseMetal(p.metal);
+  const catPath = [p.cat, p.cat2, p.cat3].map(s => (s ?? '').trim()).filter(Boolean);
   return {
     id: skuToId(p.sku),
     name: p.name || '',
-    cat: p.cat || '',
+    cat: catPath[catPath.length - 1] ?? '',
+    catPath,
     col: p.collection || '',
     metal,
     karat,
@@ -140,6 +146,29 @@ export async function fetchAdminCategories(): Promise<string[]> {
   }
 }
 
+export interface CategoryNode {
+  name: string;
+  slug: string;
+  children?: CategoryNode[];
+}
+
+export async function fetchCategoryTree(): Promise<CategoryNode[]> {
+  try {
+    const res = await fetch(`${BASE}/api/categories?tree=1`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    // Older admin deployments return a plain string[] even with tree=1 — normalise to nodes.
+    return data
+      .filter(d => d != null)
+      .map(d => typeof d === 'string'
+        ? { name: d, slug: d.toLowerCase().replace(/\s+/g, '-'), children: [] }
+        : d as CategoryNode);
+  } catch {
+    return [];
+  }
+}
+
 export interface AdminOrderPayload {
   no: string;
   customer: string;
@@ -156,6 +185,31 @@ export interface AdminOrderPayload {
   subtotalStr: string;
   discountStr: string;
   shippingStr: string;
+  promoCode?: string;
+  promoDiscount?: number;
+  subtotalNum?: number;
+}
+
+export interface PromoValidation {
+  valid: boolean;
+  code?: string;
+  discount?: number;
+  message?: string;
+  error?: string;
+}
+
+export async function validatePromo(code: string, orderTotal: number): Promise<PromoValidation> {
+  try {
+    const res = await fetch(`${BASE}/api/promos/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, orderTotal }),
+    });
+    if (!res.ok) return { valid: false, error: 'Could not validate promo code. Please try again.' };
+    return await res.json();
+  } catch {
+    return { valid: false, error: 'Could not validate promo code. Please try again.' };
+  }
 }
 
 export async function fetchAdminOrders(): Promise<AdminOrderPayload[]> {
@@ -168,15 +222,19 @@ export async function fetchAdminOrders(): Promise<AdminOrderPayload[]> {
   }
 }
 
-export async function createAdminOrder(payload: AdminOrderPayload): Promise<boolean> {
+export async function createAdminOrder(payload: AdminOrderPayload): Promise<{ ok: boolean; promoError?: string }> {
   try {
     const res = await fetch(`${BASE}/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return res.ok;
+    if (res.status === 400 && payload.promoCode) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, promoError: (data as { error?: string }).error || 'This promo code is no longer valid.' };
+    }
+    return { ok: res.ok };
   } catch {
-    return false;
+    return { ok: false };
   }
 }
