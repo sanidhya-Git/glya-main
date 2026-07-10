@@ -436,6 +436,12 @@ export default function Header() {
           font-size: 9px; font-weight: 600; border-radius: 9px;
           display: flex; align-items: center; justify-content: center;
           padding: 0 3px; pointer-events: none;
+          animation: ghBadgePop .35s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes ghBadgePop {
+          0%   { transform: scale(.4); }
+          60%  { transform: scale(1.3); }
+          100% { transform: scale(1); }
         }
         .gh-div { width:1px; height:18px; background:var(--line); margin:0 6px; flex-shrink:0; }
         .gh-acct {
@@ -640,13 +646,13 @@ export default function Header() {
             <button className="gh-ib" onClick={() => setSearchOpen(true)} aria-label="Search">
               <IconSearch />
             </button>
-            <Link href="/account?tab=wishlist" className="gh-ib" aria-label="Wishlist">
+            <Link href="/account?tab=wishlist" className="gh-ib" aria-label="Wishlist" data-fly-target="wish">
               <IconHeart filled={wishlist.length > 0} />
-              {wishlist.length > 0 && <span className="gh-badge">{wishlist.length}</span>}
+              {wishlist.length > 0 && <span className="gh-badge" key={wishlist.length}>{wishlist.length}</span>}
             </Link>
-            <Link href="/cart" className="gh-ib" aria-label="Cart">
+            <Link href="/cart" className="gh-ib" aria-label="Cart" data-fly-target="cart">
               <IconBag />
-              {cartCount > 0 && <span className="gh-badge">{cartCount}</span>}
+              {cartCount > 0 && <span className="gh-badge" key={cartCount}>{cartCount}</span>}
             </Link>
             <div className="gh-div" />
             <Link href="/account" className="gh-acct" aria-label="Account">

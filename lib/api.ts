@@ -42,6 +42,8 @@ export interface AdminBanner {
   title: string;
   imageUrl: string;
   link: string;
+  /** Category name — clicking the banner opens /browse?cat=<category> unless a custom link is set. */
+  category?: string;
   active: boolean;
   order: number;
 }
@@ -130,7 +132,7 @@ export async function fetchAdminBanners(): Promise<AdminBanner[]> {
     const res = await fetch(`${BASE}/api/banners?active=1`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data: AdminBanner[] = await res.json();
-    return data.filter(b => b.active && b.imageUrl);
+    return data.filter(b => b.active && b.imageUrl).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   } catch {
     return [];
   }

@@ -1,10 +1,11 @@
 'use client';
-import { useState, use } from 'react';
+import { useState, useRef, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { priceOf, inr, sizeInfo } from '@/lib/catalog';
+import { flyToHeader, popElement } from '@/lib/fly';
 import ProductCard from '@/components/ProductCard';
 import type { StorefrontProduct } from '@/lib/api';
 
@@ -28,6 +29,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [pincode,   setPincode]   = useState('');
   const [openAcc,   setOpenAcc]   = useState<number | null>(null);
   const [galleryIdx,setGalleryIdx]= useState(0);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const karat = karatSel || p?.karat || '18K';
 
@@ -69,7 +71,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     if (!p) return;
     const key = [p.id, karat, size, engraving].join('|');
     addToCart({ key, id: p.id, karat, size, engraving });
-    router.push('/cart');
+    /* Let the product fly into the bag before the cart page takes over. */
+    if (galleryRef.current) {
+      flyToHeader(galleryRef.current, 'cart', images[galleryIdx] ?? null);
+      setTimeout(() => router.push('/cart'), 900);
+    } else {
+      router.push('/cart');
+    }
   }
 
   const activeImg = images[galleryIdx];
@@ -97,7 +105,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       <div className="pdp-grid">
         {/* GALLERY */}
         <div className="pdp-gallery-sticky">
-          <div style={{ position:'relative', width:'100%', aspectRatio:'1/1', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
+          <div ref={galleryRef} style={{ position:'relative', width:'100%', aspectRatio:'1/1', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
             {activeImg
               ? <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'cover' }} />
               : <span>◈</span>
@@ -193,7 +201,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               onMouseEnter={e => (e.currentTarget.style.background='var(--gold-d)')}
               onMouseLeave={e => (e.currentTarget.style.background='var(--ink)')}
             >Add to cart</button>
-            <button onClick={() => toggleWish(p.id)}
+            <button onClick={e => {
+                popElement(e.currentTarget);
+                if (!wished && galleryRef.current) flyToHeader(galleryRef.current, 'wish', images[galleryIdx] ?? null);
+                toggleWish(p.id);
+              }}
               style={{ cursor:'pointer', width:58, border:'1px solid var(--ink)', background:'transparent', fontSize:20, color:wished?'#B08D57':'var(--ink)', borderRadius:2, transition:'color .18s, border-color .18s' }}>
               {wished ? '♥' : '♡'}
             </button>

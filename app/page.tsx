@@ -7,7 +7,8 @@ import DataProvider from '@/components/DataProvider';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import BannerCarousel from '@/components/BannerCarousel';
+import HeroCarousel from '@/components/HeroCarousel';
+import SiteLoader from '@/components/SiteLoader';
 
 const DEFAULT_CATS = [
   { name: 'Rings',        icon: '◉', href: '/browse?cat=Rings' },
@@ -40,6 +41,7 @@ export default function Home() {
 
   return (
     <>
+      <SiteLoader />
       <style>{`
         .home-editorial { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); overflow:hidden; border-radius:4px; }
         .home-editorial-img { background:#2F4A3F; min-height:340px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
@@ -74,24 +76,8 @@ export default function Home() {
 
       <main style={{ background:'var(--paper)', minHeight:'calc(100vh - 120px)' }}>
 
-        {/* ── HERO ── */}
-        <section style={{ height:'90vh', minHeight:500, background:'#211C17', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 clamp(20px,5vw,60px)', position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 60% 40%, rgba(176,141,87,0.18) 0%, transparent 62%)', pointerEvents:'none' }} />
-          <p style={{ fontSize:11, letterSpacing:'0.22em', textTransform:'uppercase', color:'#B08D57', position:'relative' }}>Fine jewellery · since 2019</p>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(44px,8vw,100px)', color:'#EDE6D8', lineHeight:1.0, marginTop:18, maxWidth:800, fontWeight:400, position:'relative' }}>
-            Where gold<br />meets <em style={{ fontStyle:'italic', color:'#B08D57' }}>art</em>
-          </h1>
-          <p style={{ color:'#9E958A', fontSize:'clamp(14px,1.5vw,16px)', marginTop:22, maxWidth:420, lineHeight:1.7, position:'relative' }}>
-            Each piece designed in our Pune atelier. Hallmarked, certified, and made to become your heirloom.
-          </p>
-          <div style={{ display:'flex', gap:14, marginTop:36, flexWrap:'wrap', justifyContent:'center', position:'relative' }}>
-            <Link href="/browse" style={{ display:'inline-block', padding:'14px 36px', background:'#B08D57', color:'#211C17', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, textDecoration:'none', borderRadius:2 }}>Shop the collection</Link>
-            <Link href="/browse?col=Bridal" style={{ display:'inline-block', padding:'14px 36px', border:'1px solid rgba(237,230,216,0.28)', color:'#EDE6D8', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', textDecoration:'none', borderRadius:2 }}>Bridal edit</Link>
-          </div>
-        </section>
-
-        {/* ── ADMIN BANNERS ── */}
-        <BannerCarousel />
+        {/* ── HERO (admin banners carousel, static fallback) ── */}
+        <HeroCarousel />
 
         {/* ── TRUST BAND ── */}
         <div className="trust-grid" style={{ maxWidth:1180, margin:'0 auto', marginTop:'clamp(32px,5vw,56px)', marginLeft:'clamp(16px,3vw,auto)', marginRight:'clamp(16px,3vw,auto)' }}>

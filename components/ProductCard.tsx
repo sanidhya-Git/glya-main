@@ -1,8 +1,10 @@
 'use client';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import { Product, priceOf, inr, metalLabel } from '@/lib/catalog';
+import { flyToHeader, popElement } from '@/lib/fly';
 import type { StorefrontProduct } from '@/lib/api';
 
 interface Props {
@@ -17,12 +19,13 @@ export default function ProductCard({ product: p, goldRate, size = 'md' }: Props
   const wished     = wishlist.includes(p.id);
   const pr         = priceOf(p, undefined, goldRate);
   const img        = (p as StorefrontProduct).images?.[0];
+  const imgWrap    = useRef<HTMLDivElement>(null);
 
   return (
     <div style={{ cursor:'pointer', position:'relative' }}>
       <div style={{ position:'relative' }}>
         <Link href={`/product/${p.id}`} style={{ display:'block', textDecoration:'none' }}>
-          <div style={{
+          <div ref={imgWrap} style={{
             width:'100%', aspectRatio: size === 'sm' ? '1/1' : '4/5',
             background:'var(--paper2)', borderRadius:3, overflow:'hidden',
             display:'flex', alignItems:'center', justifyContent:'center',
@@ -39,7 +42,12 @@ export default function ProductCard({ product: p, goldRate, size = 'md' }: Props
           <span style={{ position:'absolute', top:12, left:12, background:'rgba(250,247,241,0.94)', fontSize:10.5, letterSpacing:'0.12em', textTransform:'uppercase', padding:'5px 10px', borderRadius:2, color:'var(--gold-d)', zIndex:1 }}>{p.tag}</span>
         )}
         <button
-          onClick={e => { e.preventDefault(); toggleWish(p.id); }}
+          onClick={e => {
+            e.preventDefault();
+            popElement(e.currentTarget);
+            if (!wished && imgWrap.current) flyToHeader(imgWrap.current, 'wish', img ?? null);
+            toggleWish(p.id);
+          }}
           style={{ position:'absolute', top:10, right:10, width:34, height:34, borderRadius:'50%', border:'none', background:'rgba(250,247,241,0.9)', cursor:'pointer', fontSize:16, color:wished?'#B08D57':'#211C17', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1, transition:'color .18s, transform .15s' }}
         >
           {wished ? '♥' : '♡'}
