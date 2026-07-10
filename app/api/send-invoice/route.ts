@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid #EFE9DD;">
           <div style="font-family:Georgia,serif;font-size:15px;color:#211C17;">${esc(l.name)}</div>
-          <div style="font-size:12px;color:#8C8275;margin-top:3px;">${esc(l.meta)}</div>
+          <div style="font-size:12px;color:#6F6557;margin-top:3px;">${esc(l.meta)}</div>
         </td>
         <td style="padding:12px 8px;border-bottom:1px solid #EFE9DD;text-align:center;font-size:13px;color:#4A423A;white-space:nowrap;">× ${esc(l.qty)}</td>
         <td style="padding:12px 0;border-bottom:1px solid #EFE9DD;text-align:right;font-size:14px;color:#211C17;white-space:nowrap;">${esc(l.priceStr)}</td>
@@ -95,38 +95,38 @@ export async function POST(request: Request) {
             <div style="background:#fff;border:1px solid #E7DFD2;border-radius:4px;padding:20px 24px;margin-top:24px;">
               <table style="width:100%;border-collapse:collapse;font-size:13px;color:#4A423A;">
                 <tr>
-                  <td style="padding:3px 0;color:#8C8275;">Order number</td>
+                  <td style="padding:3px 0;color:#6F6557;">Order number</td>
                   <td style="padding:3px 0;text-align:right;color:#211C17;"><b>${esc(body.orderNo)}</b></td>
                 </tr>
                 <tr>
-                  <td style="padding:3px 0;color:#8C8275;">Order date</td>
+                  <td style="padding:3px 0;color:#6F6557;">Order date</td>
                   <td style="padding:3px 0;text-align:right;">${esc(body.date)}</td>
                 </tr>
                 <tr>
-                  <td style="padding:3px 0;color:#8C8275;">Payment method</td>
+                  <td style="padding:3px 0;color:#6F6557;">Payment method</td>
                   <td style="padding:3px 0;text-align:right;">${esc(body.payment)}</td>
                 </tr>
                 <tr>
-                  <td style="padding:3px 0;color:#8C8275;">Delivery</td>
+                  <td style="padding:3px 0;color:#6F6557;">Delivery</td>
                   <td style="padding:3px 0;text-align:right;">${esc(body.delivery)}${body.etaDate ? ` · est. ${esc(body.etaDate)}` : ''}</td>
                 </tr>
               </table>
             </div>
 
             <div style="background:#fff;border:1px solid #E7DFD2;border-radius:4px;padding:20px 24px;margin-top:14px;">
-              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8C8275;margin-bottom:6px;">Delivering to</div>
+              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6F6557;margin-bottom:6px;">Delivering to</div>
               <div style="font-size:13.5px;color:#4A423A;line-height:1.6;">${esc(body.name)}<br/>${esc(body.address)}</div>
             </div>
 
             <div style="background:#fff;border:1px solid #E7DFD2;border-radius:4px;padding:20px 24px;margin-top:14px;">
-              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8C8275;margin-bottom:4px;">Your pieces</div>
+              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6F6557;margin-bottom:4px;">Your pieces</div>
               <table style="width:100%;border-collapse:collapse;">${rows}</table>
               <table style="width:100%;border-collapse:collapse;margin-top:14px;">
                 ${totals}
                 <tr><td colspan="3" style="border-top:1px solid #E7DFD2;padding:0;"></td></tr>
                 ${totalRow('<b>Total paid</b>', `<b>${esc(body.totalStr)}</b>`, { big: true })}
               </table>
-              <div style="font-size:11.5px;color:#8C8275;margin-top:6px;">Inclusive of all taxes · GST invoice</div>
+              <div style="font-size:11.5px;color:#6F6557;margin-top:6px;">Inclusive of all taxes · GST invoice</div>
             </div>
 
             ${body.viewOrderUrl ? `
@@ -134,14 +134,14 @@ export async function POST(request: Request) {
               <a href="${esc(body.viewOrderUrl)}" style="display:inline-block;background:#211C17;color:#EDE6D8;text-decoration:none;padding:15px 40px;font-size:12.5px;letter-spacing:0.14em;text-transform:uppercase;border-radius:2px;">View your order</a>
             </div>` : ''}
 
-            <p style="font-size:12.5px;color:#8C8275;line-height:1.7;margin:24px 0 0;">
+            <p style="font-size:12.5px;color:#6F6557;line-height:1.7;margin:24px 0 0;">
               Every piece is BIS hallmarked and ships with a certificate of authenticity.
               An account has been created for you with this email — your orders will be waiting
               whenever you return to GLYA.
             </p>
           </div>
           <div style="background:#F2EDE3;padding:16px 32px;border-top:1px solid #E7DFD2;">
-            <p style="font-size:11.5px;color:#8C8275;margin:0;">© GLYA Fine Jewellery — Certified diamonds &amp; 22K gold · Pune, India</p>
+            <p style="font-size:11.5px;color:#6F6557;margin:0;">© GLYA Fine Jewellery — Certified diamonds &amp; 22K gold · Pune, India</p>
           </div>
         </div>
       `,

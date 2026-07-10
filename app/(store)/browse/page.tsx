@@ -176,7 +176,7 @@ function BrowseContent() {
     return {
       border:     active ? 'var(--gold)'           : 'var(--line)',
       background: active ? 'rgba(176,141,87,0.10)' : 'transparent',
-      color:      active ? '#93733E'               : 'var(--ink2)',
+      color:      active ? '#785D30'               : 'var(--ink2)',
     };
   }
 
@@ -187,7 +187,7 @@ function BrowseContent() {
       <div>
         <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Collection</div>
         <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-          <div onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:!activeCol?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCol?500:400, transition:'color .14s' }}>
+          <div onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:!activeCol?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCol?500:400, transition:'color .14s' }}>
             <span>All</span>
             <span style={{ fontSize:11.5, color:'var(--muted)' }}>{products.length}</span>
           </div>
@@ -195,7 +195,7 @@ function BrowseContent() {
             const count = products.filter(p => p.col === c).length;
             return (
               <div key={c} onClick={() => { setActiveCol(c); setActiveCat(''); }}
-                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:activeCol===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCol===c?500:400, transition:'color .14s' }}>
+                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', fontSize:13.5, color:activeCol===c?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCol===c?500:400, transition:'color .14s' }}>
                 <span>{c}</span>
                 <span style={{ fontSize:11.5, color:'var(--muted)' }}>{count}</span>
               </div>
@@ -209,10 +209,10 @@ function BrowseContent() {
         <div>
           <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Category</div>
           <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-            <div onClick={() => setActiveCat('')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:!activeCat?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCat?500:400, transition:'color .14s' }}>All</div>
+            <div onClick={() => setActiveCat('')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:!activeCat?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:!activeCat?500:400, transition:'color .14s' }}>All</div>
             {(catList.length > 0 ? catList : adminCategories).map(c => (
               <div key={c} onClick={() => setActiveCat(c)}
-                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', fontSize:13, color:activeCat===c?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400, transition:'color .14s' }}>
+                style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', fontSize:13, color:activeCat===c?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeCat===c?500:400, transition:'color .14s' }}>
                 <span>{c}</span>
                 <span style={{ fontSize:11.5, color:'var(--muted)' }}>{products.filter(p => p.cat === c).length || ''}</span>
               </div>
@@ -226,10 +226,10 @@ function BrowseContent() {
         <div>
           <div style={{ fontSize:11, letterSpacing:'.18em', textTransform:'uppercase', color:'var(--ink)', marginBottom:12, fontWeight:600 }}>Gemstone</div>
           <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-            <div onClick={() => setActiveGem('all')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem==='all'?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem==='all'?500:400, transition:'color .14s' }}>All Gemstones</div>
+            <div onClick={() => setActiveGem('all')} style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem==='all'?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem==='all'?500:400, transition:'color .14s' }}>All Gemstones</div>
             {gemstones.map(g => (
               <div key={g} onClick={() => setActiveGem(g)}
-                style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem===g?'#93733E':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem===g?500:400, transition:'color .14s' }}>
+                style={{ cursor:'pointer', padding:'7px 0', fontSize:13, color:activeGem===g?'#785D30':'var(--ink2)', borderBottom:'1px solid var(--line)', fontWeight:activeGem===g?500:400, transition:'color .14s' }}>
                 {g}
               </div>
             ))}
@@ -303,12 +303,12 @@ function BrowseContent() {
       {/* Active filter chips */}
       {activeCount > 0 && (
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:20 }}>
-          {activeCol   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeCol} <button onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeCat   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeCat} <button onClick={() => { setActiveCat(''); setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeSub   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeSub} <button onClick={() => { setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeType  && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeType} <button onClick={() => setActiveType('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeMetal && activeMetal !== 'All' && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeMetal} <button onClick={() => setActiveMetal('All')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
-          {activeGem   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#93733E' }}>{activeGem === 'all' ? 'All Gemstones' : activeGem} <button onClick={() => setActiveGem('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#93733E', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeCol   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeCol} <button onClick={() => { setActiveCol(''); setActiveCat(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeCat   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeCat} <button onClick={() => { setActiveCat(''); setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeSub   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeSub} <button onClick={() => { setActiveSub(''); setActiveType(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeType  && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeType} <button onClick={() => setActiveType('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeMetal && activeMetal !== 'All' && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeMetal} <button onClick={() => setActiveMetal('All')} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
+          {activeGem   && <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, padding:'5px 11px', background:'rgba(176,141,87,.10)', border:'1px solid var(--gold)', borderRadius:20, color:'#785D30' }}>{activeGem === 'all' ? 'All Gemstones' : activeGem} <button onClick={() => setActiveGem('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#785D30', padding:0, lineHeight:1, fontSize:14 }}>×</button></span>}
           <button onClick={resetAll} style={{ fontSize:12, padding:'5px 11px', background:'none', border:'1px solid var(--line)', borderRadius:20, cursor:'pointer', color:'var(--muted)', letterSpacing:'.06em' }}>Clear all</button>
         </div>
       )}
@@ -333,7 +333,7 @@ function BrowseContent() {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, borderBottom:'1px solid var(--line)', paddingBottom:14, flexWrap:'wrap', gap:10 }}>
                 <span style={{ fontSize:13, color:'var(--muted)' }}>Showing {list.length} result{list.length!==1?'s':''}</span>
                 {activeCount > 0 && (
-                  <button onClick={resetAll} style={{ cursor:'pointer', background:'transparent', border:'none', fontSize:12.5, color:'var(--gold)', letterSpacing:'.06em' }}>
+                  <button onClick={resetAll} style={{ cursor:'pointer', background:'transparent', border:'none', fontSize:12.5, color:'var(--gold-d)', letterSpacing:'.06em' }}>
                     Clear filters ×
                   </button>
                 )}

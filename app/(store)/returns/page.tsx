@@ -52,7 +52,7 @@ export default function ReturnsPage() {
             { val: 'Lifetime', label: 'Buyback program' },
           ].map((s, i) => (
             <div key={s.val} style={{ padding: 'clamp(20px,3vw,32px) clamp(16px,2.5vw,28px)', textAlign: 'center', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(28px,3.5vw,38px)', fontWeight: 500, color: 'var(--gold)' }}>{s.val}</div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(28px,3.5vw,38px)', fontWeight: 500, color: 'var(--gold-d)' }}>{s.val}</div>
               <div style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 6 }}>{s.label}</div>
             </div>
           ))}

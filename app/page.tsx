@@ -141,7 +141,7 @@ export default function Home() {
                 <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Right now</p>
                 <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>Trending pieces</h2>
               </div>
-              <Link href="/browse" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>View all →</Link>
+              <Link href="/browse" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>View all →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
               {trending.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
@@ -192,7 +192,7 @@ export default function Home() {
                 <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Just arrived</p>
                 <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>New arrivals</h2>
               </div>
-              <Link href="/browse?tag=New" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>See new →</Link>
+              <Link href="/browse?tag=New" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>See new →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
               {newArr.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
@@ -207,7 +207,7 @@ export default function Home() {
               <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>From the journal</p>
               <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>Stories &amp; guides</h2>
             </div>
-            <Link href="/journal" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', textDecoration:'none' }}>All posts →</Link>
+            <Link href="/journal" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>All posts →</Link>
           </div>
           {blogs.length > 0 ? (
             <div className="blog-grid">
@@ -258,7 +258,7 @@ export default function Home() {
                 onMouseLeave={e => (e.currentTarget.style.background='var(--gold)')}
               >Subscribe</button>
             </div>
-            <p style={{ fontSize:12.5, color:'#8B8272', marginTop:12 }}>No spam. Unsubscribe any time.</p>
+            <p style={{ fontSize:12.5, color:'#9C9284', marginTop:12 }}>No spam. Unsubscribe any time.</p>
           </div>
         </section>
 

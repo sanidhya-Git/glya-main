@@ -154,7 +154,6 @@ export default function CartPage() {
             onMouseEnter={e => (e.currentTarget.style.background='var(--gold-d)')}
             onMouseLeave={e => (e.currentTarget.style.background='var(--ink)')}
           >Secure checkout</button>
-          <div style={{ textAlign:'center', marginTop:14, fontSize:12, color:'var(--muted)' }}>🔒 256-bit encrypted · Razorpay · UPI</div>
         </div>
       </div>
     </main>

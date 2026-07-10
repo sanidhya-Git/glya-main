@@ -19,9 +19,9 @@ export default function Footer() {
             <p style={{ marginTop:16, fontSize:13.5, lineHeight:1.7, fontWeight:300, maxWidth:240 }}>Certified fine jewellery, priced transparently to the live gold rate. Designed and hallmarked in India.</p>
             <div style={{ display:'flex', gap:14, marginTop:20 }}>
               {['Instagram','Pinterest','YouTube'].map(s => (
-                <span key={s} style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', cursor:'pointer', color:'#8B8272' }}
+                <span key={s} style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', cursor:'pointer', color:'#9C9284' }}
                   onMouseEnter={e => (e.currentTarget.style.color='var(--gold)')}
-                  onMouseLeave={e => (e.currentTarget.style.color='#8B8272')}
+                  onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}
                 >{s}</span>
               ))}
             </div>
@@ -80,13 +80,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div style={{ borderTop:'1px solid rgba(201,192,176,0.16)', marginTop:40, paddingTop:24, display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:14, fontSize:12.5, color:'#8B8272' }}>
+        <div style={{ borderTop:'1px solid rgba(201,192,176,0.16)', marginTop:40, paddingTop:24, display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:14, fontSize:12.5, color:'#9C9284' }}>
           <span>© 2026 Glya Fine Jewellery. All rights reserved.</span>
           <div style={{ display:'flex', gap:18, flexWrap:'wrap' }}>
-            <Link href="/privacy" style={{ color:'#8B8272', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#8B8272')}>Privacy</Link>
-            <Link href="/terms"   style={{ color:'#8B8272', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#8B8272')}>Terms</Link>
-            <Link href="/returns" style={{ color:'#8B8272', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#8B8272')}>Returns</Link>
-            <Link href="/faq"     style={{ color:'#8B8272', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#8B8272')}>FAQ</Link>
+            <Link href="/privacy" style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Privacy</Link>
+            <Link href="/terms"   style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Terms</Link>
+            <Link href="/returns" style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Returns</Link>
+            <Link href="/faq"     style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>FAQ</Link>
           </div>
         </div>
       </div>

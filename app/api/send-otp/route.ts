@@ -41,16 +41,16 @@ export async function POST(request: Request) {
               Use the code below to verify your email address and continue to checkout.
             </p>
             <div style="text-align:center;background:#fff;border:1px solid #E7DFD2;border-radius:4px;padding:28px;">
-              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8C8275;margin-bottom:12px;">Verification code</div>
+              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6F6557;margin-bottom:12px;">Verification code</div>
               <div style="font-family:Georgia,serif;font-size:38px;letter-spacing:0.28em;color:#211C17;">${otp}</div>
-              <div style="font-size:12px;color:#8C8275;margin-top:12px;">Expires in 10 minutes</div>
+              <div style="font-size:12px;color:#6F6557;margin-top:12px;">Expires in 10 minutes</div>
             </div>
-            <p style="font-size:12.5px;color:#8C8275;line-height:1.7;margin:24px 0 0;">
+            <p style="font-size:12.5px;color:#6F6557;line-height:1.7;margin:24px 0 0;">
               If you did not request this code, you can safely ignore this email.
             </p>
           </div>
           <div style="background:#F2EDE3;padding:16px 32px;border-top:1px solid #E7DFD2;">
-            <p style="font-size:11.5px;color:#8C8275;margin:0;">© GLYA Fine Jewellery — Certified diamonds &amp; 22K gold</p>
+            <p style="font-size:11.5px;color:#6F6557;margin:0;">© GLYA Fine Jewellery — Certified diamonds &amp; 22K gold</p>
           </div>
         </div>
       `,

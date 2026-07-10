@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore, Order, OrderLine } from '@/lib/store';
 import { priceOf, inr } from '@/lib/catalog';
 import { createAdminOrder } from '@/lib/api';
@@ -8,14 +9,11 @@ import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 
 const shipOptions = [
   { label: 'Insured standard',  desc: '3–5 business days', cost: 0 },
-  { label: 'Insured express',   desc: '1–2 business days', cost: 299 },
-  { label: 'Insured same-day',  desc: 'Select cities only', cost: 499 },
 ];
 const payMethods = [
   { icon: '💳', label: 'Credit / Debit card', desc: 'Visa, Mastercard, Amex' },
   { icon: '📱', label: 'UPI',                  desc: 'GPay, PhonePe, Paytm' },
   { icon: '🏦', label: 'Net banking',           desc: 'All major banks' },
-  { icon: '📦', label: 'Cash on delivery',      desc: 'Select pincodes' },
 ];
 
 const inputStyle: React.CSSProperties = {
@@ -441,6 +439,23 @@ export default function CheckoutPage() {
         {/* Summary sidebar */}
         <div className="co-summary">
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, marginBottom: 16 }}>Summary</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--line)' }}>
+            {items.map((it, i) => {
+              const img = it.p.images?.[0];
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0, borderRadius: 3, overflow: 'hidden', background: 'var(--line)' }}>
+                    {img && <Image src={img} alt={it.p.name} fill sizes="52px" style={{ objectFit: 'cover' }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.p.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{it.metalLabel}{it.size ? ` · Size ${it.size}` : ''} · Qty {it.qty}</div>
+                  </div>
+                  <div style={{ fontSize: 13.5, whiteSpace: 'nowrap' }}>{it.lineStr}</div>
+                </div>
+              );
+            })}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Subtotal ({items.reduce((a, b) => a + b.qty, 0)})</span><span>{inr(subtotal)}</span></div>
             {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--em)' }}><span>Discount ({couponApplied?.code})</span><span>− {inr(discount)}</span></div>}

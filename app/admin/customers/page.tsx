@@ -4,9 +4,9 @@ import { useStore } from '@/lib/store';
 import { inr } from '@/lib/catalog';
 
 function getTier(ltv: number) {
-  if (ltv >= 500000) return { label: 'Platinum',    color: '#9B7FBA' };
-  if (ltv >= 150000) return { label: 'Gold Circle', color: '#B08D57' };
-  return                     { label: 'Silver',     color: '#8B8272' };
+  if (ltv >= 500000) return { label: 'Platinum',    color: '#7C5FA0' };
+  if (ltv >= 150000) return { label: 'Gold Circle', color: '#785D30' };
+  return                     { label: 'Silver',     color: '#6F6557' };
 }
 
 export default function AdminCustomersPage() {

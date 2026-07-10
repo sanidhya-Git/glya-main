@@ -5,26 +5,7 @@ import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import type { AdminBanner } from '@/lib/api';
 
-const ROTATE_MS = 5000;
-
-function StaticHero() {
-  return (
-    <section style={{ height:'90vh', minHeight:500, background:'#211C17', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 clamp(20px,5vw,60px)', position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 60% 40%, rgba(176,141,87,0.18) 0%, transparent 62%)', pointerEvents:'none' }} />
-      <p style={{ fontSize:11, letterSpacing:'0.22em', textTransform:'uppercase', color:'#B08D57', position:'relative' }}>Fine jewellery · since 2019</p>
-      <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(44px,8vw,100px)', color:'#EDE6D8', lineHeight:1.0, marginTop:18, maxWidth:800, fontWeight:400, position:'relative' }}>
-        Where gold<br />meets <em style={{ fontStyle:'italic', color:'#B08D57' }}>art</em>
-      </h1>
-      <p style={{ color:'#9E958A', fontSize:'clamp(14px,1.5vw,16px)', marginTop:22, maxWidth:420, lineHeight:1.7, position:'relative' }}>
-        Each piece designed in our Pune atelier. Hallmarked, certified, and made to become your heirloom.
-      </p>
-      <div style={{ display:'flex', gap:14, marginTop:36, flexWrap:'wrap', justifyContent:'center', position:'relative' }}>
-        <Link href="/browse" style={{ display:'inline-block', padding:'14px 36px', background:'#B08D57', color:'#211C17', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, textDecoration:'none', borderRadius:2 }}>Shop the collection</Link>
-        <Link href="/browse?col=Bridal" style={{ display:'inline-block', padding:'14px 36px', border:'1px solid rgba(237,230,216,0.28)', color:'#EDE6D8', fontSize:12.5, letterSpacing:'0.12em', textTransform:'uppercase', textDecoration:'none', borderRadius:2 }}>Bridal edit</Link>
-      </div>
-    </section>
-  );
-}
+const ROTATE_MS = 3000;
 
 export default function HeroCarousel() {
   const adminBanners = useStore(s => s.adminBanners);
@@ -42,7 +23,7 @@ export default function HeroCarousel() {
     return () => clearInterval(t);
   }, [banners.length, paused]);
 
-  if (banners.length === 0) return <StaticHero />;
+  if (banners.length === 0) return null;
 
   const safeIdx = idx % banners.length;
   const prev = () => setIdx(i => (i - 1 + banners.length) % banners.length);
@@ -96,18 +77,12 @@ export default function HeroCarousel() {
         )}
       </div>
       {banners.length > 1 && (
-        banners.length <= 10 ? (
-          <div style={{ display:'flex', justifyContent:'center', gap:9, padding:'14px 0 2px' }}>
-            {banners.map((b, i) => (
-              <button key={b._id} onClick={() => setIdx(i)} aria-label={`Banner ${i + 1}`}
-                style={{ width:i === safeIdx ? 20 : 7, height:7, borderRadius:4, border:'none', cursor:'pointer', padding:0, background:i === safeIdx ? 'var(--gold)' : 'rgba(33,28,23,0.25)', transition:'all .3s' }} />
-            ))}
-          </div>
-        ) : (
-          <div style={{ textAlign:'center', padding:'12px 0 2px', fontSize:12, letterSpacing:'0.14em', color:'var(--muted)' }}>
-            {safeIdx + 1} / {banners.length}
-          </div>
-        )
+        <div style={{ display:'flex', justifyContent:'center', gap:11, padding:'15px 0 3px' }}>
+          {banners.map((b, i) => (
+            <button key={b._id} onClick={() => setIdx(i)} aria-label={`Banner ${i + 1}`}
+              style={{ width:8, height:8, border:'none', cursor:'pointer', padding:0, transform:'rotate(45deg)', background:i === safeIdx ? 'var(--gold)' : 'rgba(33,28,23,0.35)', transition:'all .3s' }} />
+          ))}
+        </div>
       )}
     </section>
   );

@@ -47,7 +47,9 @@ function AccountContent() {
   const totalSpend = orders.reduce((a, o) => a + o.total, 0);
   const points     = Math.round(totalSpend / 100);
   const tier       = points >= 5000 ? 'Platinum' : points >= 1000 ? 'Gold Circle' : 'Silver';
-  const tierColor  = tier === 'Platinum' ? '#9B7FBA' : tier === 'Gold Circle' ? '#B08D57' : '#8B8272';
+  // Light-bg text needs the darker shades; the dark rewards card needs the lighter ones
+  const tierColor      = tier === 'Platinum' ? '#7C5FA0' : tier === 'Gold Circle' ? '#785D30' : '#6F6557';
+  const tierColorDark  = tier === 'Platinum' ? '#9B7FBA' : tier === 'Gold Circle' ? '#B08D57' : '#9C9284';
 
   const wishLoading = !productsLoaded && wishlist.length > 0;
   const wishItems   = adminProducts.filter(p => wishlist.includes(p.id));
@@ -96,7 +98,7 @@ function AccountContent() {
                 </div>
                 <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                   <span style={{ fontSize:12, padding:'4px 10px', borderRadius:2, background:`${statusColor(o.status)}15`, color:statusColor(o.status) }}>{o.status}</span>
-                  <Link href={`/track?order=${o.orderNo}`} style={{ fontSize:12.5, color:'var(--gold)', textDecoration:'none' }}>Track →</Link>
+                  <Link href={`/track?order=${o.orderNo}`} style={{ fontSize:12.5, color:'var(--gold-d)', textDecoration:'none' }}>Track →</Link>
                 </div>
               </div>
               <div style={{ padding:'14px 18px', display:'flex', gap:12, overflowX:'auto' }}>
@@ -155,15 +157,15 @@ function AccountContent() {
         <div style={{ maxWidth:640 }}>
           <div style={{ border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
             <div style={{ background:'var(--ink)', color:'#EDE6D8', padding:'clamp(22px,3vw,32px) clamp(18px,3vw,28px)', textAlign:'center' }}>
-              <div style={{ fontSize:11, letterSpacing:'0.16em', textTransform:'uppercase', color:tierColor }}>{tier}</div>
+              <div style={{ fontSize:11, letterSpacing:'0.16em', textTransform:'uppercase', color:tierColorDark }}>{tier}</div>
               <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(32px,4vw,42px)', marginTop:6 }}>{points.toLocaleString('en-IN')} pts</div>
               <div style={{ fontSize:13, color:'#9E958A', marginTop:4 }}>Total spend {inr(totalSpend)}</div>
             </div>
             <div style={{ padding:'clamp(18px,3vw,24px)', display:'grid', gap:12 }}>
               {[
-                { tier:'Silver',     req:'0 pts',      color:'#8B8272' },
-                { tier:'Gold Circle',req:'1,000 pts',  color:'#B08D57' },
-                { tier:'Platinum',   req:'5,000 pts',  color:'#9B7FBA' },
+                { tier:'Silver',     req:'0 pts',      color:'#8B8272', textColor:'#6F6557' },
+                { tier:'Gold Circle',req:'1,000 pts',  color:'#B08D57', textColor:'#785D30' },
+                { tier:'Platinum',   req:'5,000 pts',  color:'#9B7FBA', textColor:'#7C5FA0' },
               ].map(r => (
                 <div key={r.tier} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 14px', border:`1px solid ${r.tier===tier?r.color:'var(--line)'}`, borderRadius:2, background:r.tier===tier?`${r.color}08`:'transparent' }}>
                   <div style={{ display:'flex', gap:9, alignItems:'center' }}>
@@ -171,7 +173,7 @@ function AccountContent() {
                     <span style={{ fontSize:14 }}>{r.tier}</span>
                   </div>
                   <span style={{ fontSize:12.5, color:'var(--muted)' }}>{r.req}</span>
-                  {r.tier === tier && <span style={{ fontSize:11, color:r.color, letterSpacing:'0.06em' }}>Current</span>}
+                  {r.tier === tier && <span style={{ fontSize:11, color:r.textColor, letterSpacing:'0.06em' }}>Current</span>}
                 </div>
               ))}
               <p style={{ fontSize:12.5, color:'var(--muted)', marginTop:4 }}>Earn 1 point per ₹100 spent. Redeem 100 pts = ₹50 off.</p>

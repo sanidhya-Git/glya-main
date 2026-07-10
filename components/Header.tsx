@@ -380,7 +380,7 @@ export default function Header() {
         }
         .gh-sec-hd-label {
           font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
-          font-weight: 700; color: var(--gold);
+          font-weight: 700; color: var(--gold-d);
         }
         .gh-sec-hd-all {
           font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
@@ -412,7 +412,7 @@ export default function Header() {
           font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
           color: var(--muted); text-decoration: none; transition: color .14s;
         }
-        .gh-mega-foot a:first-child { color: var(--gold); }
+        .gh-mega-foot a:first-child { color: var(--gold-d); }
         .gh-mega-foot a:hover { color: var(--gold-d); }
 
         /* ── Actions ── */
@@ -432,7 +432,7 @@ export default function Header() {
         .gh-badge {
           position: absolute; top: 3px; right: 3px;
           min-width: 15px; height: 15px;
-          background: var(--gold); color: #fff;
+          background: var(--gold-d); color: #fff;
           font-size: 9px; font-weight: 600; border-radius: 9px;
           display: flex; align-items: center; justify-content: center;
           padding: 0 3px; pointer-events: none;
@@ -492,7 +492,7 @@ export default function Header() {
           font-size:clamp(22px,3.8vw,36px); color:var(--ink);
           padding:8px 0; outline:none; caret-color:var(--gold); box-sizing:border-box;
         }
-        .gh-si::placeholder { color:#CCC5B9; }
+        .gh-si::placeholder { color:var(--muted); }
         .gh-scl {
           flex-shrink:0; width:42px; height:42px; border-radius:50%;
           display:flex; align-items:center; justify-content:center;
@@ -560,7 +560,7 @@ export default function Header() {
         }
         .gh-mob-sec-hd-lbl {
           font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;
-          font-weight:700; color:var(--gold);
+          font-weight:700; color:var(--gold-d);
         }
         .gh-mob-sec-hd-all {
           font-size:10px; letter-spacing:.1em; text-transform:uppercase;

@@ -30,7 +30,7 @@ export default function WishlistPage() {
           </h1>
         </div>
         {wishItems.length > 0 && (
-          <Link href="/browse" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold)', textDecoration: 'none' }}>
+          <Link href="/browse" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-d)', textDecoration: 'none' }}>
             Continue browsing →
           </Link>
         )}

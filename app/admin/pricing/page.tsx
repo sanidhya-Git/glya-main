@@ -59,23 +59,23 @@ export default function AdminPricing() {
             </div>
             <div className="rate-grid">
               <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
-                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8275' }}>Gold 24K · per g</div>
+                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Gold 24K · per g</div>
                 <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:8 }}>
-                  <span style={{ fontSize:18, color:'#8C8275' }}>₹</span>
+                  <span style={{ fontSize:18, color:'#6F6557' }}>₹</span>
                   <input type="number" value={goldRate} onChange={e => setGoldRate(Number(e.target.value))}
                     style={{ width:'100%', border:'none', borderBottom:'1px solid #E7DFD2', fontFamily:"'Cormorant Garamond',serif", fontSize:26, padding:'2px 0', background:'transparent' }} />
                 </div>
               </div>
               <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
-                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8275' }}>Gold 22K · derived</div>
+                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Gold 22K · derived</div>
                 <div className="flash" style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(rate22)}</div>
               </div>
               <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
-                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8275' }}>Gold 18K · derived</div>
+                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Gold 18K · derived</div>
                 <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(rate18)}</div>
               </div>
               <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
-                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8275' }}>Platinum · per g</div>
+                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Platinum · per g</div>
                 <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(PLATINUM_RATE)}</div>
               </div>
             </div>
@@ -129,14 +129,14 @@ export default function AdminPricing() {
       <div style={{ background:'#fff', border:'1px solid #E7DFD2', borderRadius:6, marginTop:16, overflow:'hidden' }}>
         <div style={{ padding:'16px 22px', borderBottom:'1px solid #E7DFD2', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
           <div style={{ fontSize:13, letterSpacing:'0.06em', textTransform:'uppercase', fontWeight:500 }}>Coupon codes</div>
-          <div style={{ fontSize:13, color:'#8C8275' }}>Total savings given: {inr(totalCouponSavings)}</div>
+          <div style={{ fontSize:13, color:'#6F6557' }}>Total savings given: {inr(totalCouponSavings)}</div>
         </div>
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13.5 }}>
             <thead>
               <tr style={{ borderBottom:'1px solid #E7DFD2' }}>
                 {['Code','Type','Terms','Orders used','Total saved','Status'].map(h => (
-                  <th key={h} style={{ padding:'11px 20px', textAlign:'left', fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8275', fontWeight:500 }}>{h}</th>
+                  <th key={h} style={{ padding:'11px 20px', textAlign:'left', fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557', fontWeight:500 }}>{h}</th>
                 ))}
               </tr>
             </thead>
