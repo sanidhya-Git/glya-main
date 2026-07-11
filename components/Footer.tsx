@@ -1,12 +1,6 @@
 'use client';
 import Link from 'next/link';
 
-const linkStyle = { color:'#C9C0B0', textDecoration:'none' as const };
-const hover = {
-  enter: (e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color='var(--gold)'),
-  leave: (e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color='#C9C0B0'),
-};
-
 export default function Footer() {
   return (
     <footer style={{ background:'var(--ink)', color:'#C9C0B0', marginTop:'clamp(40px,6vw,90px)' }}>
@@ -16,6 +10,14 @@ export default function Footer() {
           .ft-grid { grid-template-columns:1fr 1fr; gap:30px 20px; }
           .ft-brand, .ft-news { grid-column: 1 / -1; }
         }
+        .ft-link { color:#C9C0B0; text-decoration:none; transition:color .18s ease, padding-left .18s ease; }
+        .ft-link:hover, .ft-link:active { color:var(--gold); padding-left:3px; }
+        .ft-link2 { color:#9C9284; text-decoration:none; transition:color .18s ease; }
+        .ft-link2:hover, .ft-link2:active { color:#C9C0B0; }
+        .ft-social { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#9C9284; text-decoration:none; transition:color .18s ease; }
+        .ft-social:hover, .ft-social:active { color:var(--gold); }
+        .ft-send { cursor:pointer; background:var(--gold); border:none; color:var(--ink); padding:0 18px; font-size:16px; flex-shrink:0; }
+        .ft-send:hover { background:#C9A865; }
       `}</style>
       <div style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(40px,5vw,70px) clamp(16px,3vw,28px)' }}>
         <div className="ft-grid">
@@ -26,10 +28,7 @@ export default function Footer() {
             <p style={{ marginTop:16, fontSize:13.5, lineHeight:1.7, fontWeight:300, maxWidth:240 }}>Certified fine jewellery, priced transparently to the live gold rate. Designed and hallmarked in India.</p>
             <div style={{ display:'flex', gap:14, marginTop:20, flexWrap:'wrap' }}>
               {['Instagram','Pinterest','YouTube'].map(s => (
-                <span key={s} style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', cursor:'pointer', color:'#9C9284' }}
-                  onMouseEnter={e => (e.currentTarget.style.color='var(--gold)')}
-                  onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}
-                >{s}</span>
+                <span key={s} className="ft-social" style={{ cursor:'pointer' }}>{s}</span>
               ))}
             </div>
           </div>
@@ -46,7 +45,7 @@ export default function Footer() {
                 { label:'Bridal',    href:'/browse?col=Bridal' },
                 { label:'New arrivals', href:'/browse?tag=New' },
               ].map(c => (
-                <Link key={c.label} href={c.href} style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>{c.label}</Link>
+                <Link key={c.label} href={c.href} className="ft-link">{c.label}</Link>
               ))}
             </div>
           </div>
@@ -55,11 +54,11 @@ export default function Footer() {
           <div>
             <div style={{ fontSize:11.5, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--gold)', marginBottom:16 }}>Help</div>
             <div style={{ display:'flex', flexDirection:'column', gap:11, fontSize:14 }}>
-              <Link href="/track"   style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Track order</Link>
-              <Link href="/returns" style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Returns &amp; exchange</Link>
-              <Link href="/faq"     style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>FAQ</Link>
-              <Link href="/contact" style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Contact us</Link>
-              <Link href="/account" style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>My account</Link>
+              <Link href="/track"   className="ft-link">Track order</Link>
+              <Link href="/returns" className="ft-link">Returns &amp; exchange</Link>
+              <Link href="/faq"     className="ft-link">FAQ</Link>
+              <Link href="/contact" className="ft-link">Contact us</Link>
+              <Link href="/account" className="ft-link">My account</Link>
             </div>
           </div>
 
@@ -67,9 +66,9 @@ export default function Footer() {
           <div>
             <div style={{ fontSize:11.5, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--gold)', marginBottom:16 }}>The house</div>
             <div style={{ display:'flex', flexDirection:'column', gap:11, fontSize:14 }}>
-              <Link href="/about"   style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Our story</Link>
-              <Link href="/journal" style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Journal</Link>
-              <Link href="/contact" style={linkStyle} onMouseEnter={hover.enter} onMouseLeave={hover.leave}>Contact</Link>
+              <Link href="/about"   className="ft-link">Our story</Link>
+              <Link href="/journal" className="ft-link">Journal</Link>
+              <Link href="/contact" className="ft-link">Contact</Link>
             </div>
           </div>
 
@@ -79,10 +78,7 @@ export default function Footer() {
             <p style={{ fontSize:13, fontWeight:300, marginBottom:14, lineHeight:1.6 }}>Early access to collections &amp; private events.</p>
             <div style={{ display:'flex', border:'1px solid rgba(201,192,176,0.3)', borderRadius:2, overflow:'hidden' }}>
               <input placeholder="Email address" style={{ flex:1, background:'transparent', border:'none', padding:'12px 14px', fontSize:13, color:'#fff', minWidth:0 }} />
-              <button style={{ cursor:'pointer', background:'var(--gold)', border:'none', color:'var(--ink)', padding:'0 18px', fontSize:16, flexShrink:0 }}
-                onMouseEnter={e => (e.currentTarget.style.background='#C9A865')}
-                onMouseLeave={e => (e.currentTarget.style.background='var(--gold)')}
-              >→</button>
+              <button className="ft-send" aria-label="Subscribe">→</button>
             </div>
           </div>
         </div>
@@ -90,10 +86,10 @@ export default function Footer() {
         <div style={{ borderTop:'1px solid rgba(201,192,176,0.16)', marginTop:40, paddingTop:24, display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:14, fontSize:12.5, color:'#9C9284' }}>
           <span>© 2026 Glya Fine Jewellery. All rights reserved.</span>
           <div style={{ display:'flex', gap:18, flexWrap:'wrap' }}>
-            <Link href="/privacy" style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Privacy</Link>
-            <Link href="/terms"   style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Terms</Link>
-            <Link href="/returns" style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>Returns</Link>
-            <Link href="/faq"     style={{ color:'#9C9284', textDecoration:'none' }} onMouseEnter={e => (e.currentTarget.style.color='#C9C0B0')} onMouseLeave={e => (e.currentTarget.style.color='#9C9284')}>FAQ</Link>
+            <Link href="/privacy" className="ft-link2">Privacy</Link>
+            <Link href="/terms"   className="ft-link2">Terms</Link>
+            <Link href="/returns" className="ft-link2">Returns</Link>
+            <Link href="/faq"     className="ft-link2">FAQ</Link>
           </div>
         </div>
       </div>

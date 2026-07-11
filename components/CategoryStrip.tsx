@@ -1,12 +1,15 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import type { AdminFeaturedCategory } from '@/lib/api';
 
+const SPEED_PX_S = 34; // marquee speed
+
 /* Round "shop by category" tiles below the hero banner (admin: Shop by category).
-   Centered row on desktop; swipes horizontally on mobile when tiles overflow. */
+   Continuous marquee: tiles are duplicated and scrolled seamlessly via rAF,
+   pausing while the user hovers, touches, or drags the strip. */
 export default function CategoryStrip() {
   const featuredCats = useStore(s => s.featuredCats);
   const cats = useMemo(
@@ -14,9 +17,74 @@ export default function CategoryStrip() {
     [featuredCats]
   );
 
+  const marquee = cats.length >= 3;
+  const [copies, setCopies] = useState(2);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ensure the duplicated row is at least 2× the viewport so the loop is seamless
+  useEffect(() => {
+    if (!marquee) return;
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const measure = () => {
+      const single = scroller.scrollWidth / copies;
+      if (single > 0 && single < scroller.clientWidth) {
+        const need = Math.max(2, Math.ceil((scroller.clientWidth * 2) / single));
+        if (need > copies) setCopies(need);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    return () => ro.disconnect();
+  }, [marquee, copies, cats.length]);
+
+  // Seamless auto-scroll loop
+  useEffect(() => {
+    if (!marquee) return;
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+    const tick = (now: number) => {
+      const dt = Math.min(now - last, 100);
+      last = now;
+      if (!pausedRef.current) {
+        // Accumulate sub-pixel movement so slow speeds still advance
+        acc += (SPEED_PX_S * dt) / 1000;
+        if (acc >= 1) {
+          const step = Math.floor(acc);
+          acc -= step;
+          const half = scroller.scrollWidth / 2;
+          let next = scroller.scrollLeft + step;
+          if (half > 0 && next >= half) next -= half;
+          scroller.scrollLeft = next;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [marquee, cats.length, copies]);
+
+  const pause = () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    pausedRef.current = true;
+  };
+  const resumeSoon = (delay = 1200) => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, delay);
+  };
+  useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
+
   if (cats.length === 0) return null;
 
-  const tile = (c: AdminFeaturedCategory) => {
+  const tile = (c: AdminFeaturedCategory, key: string) => {
     const label = c.name || c.category || '';
     // Custom link wins; otherwise the category routes to that category's products
     const href = c.link || (c.category ? `/browse?cat=${encodeURIComponent(c.category)}` : '');
@@ -26,32 +94,45 @@ export default function CategoryStrip() {
           <Image src={c.imageUrl} alt={label || 'Category'} fill sizes="(max-width:880px) 30vw, 150px" style={{ objectFit:'cover' }} draggable={false} />
         </span>
         {label && (
-          <span style={{ fontSize:'clamp(11px,1.3vw,12.5px)', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:500, color:'var(--ink)', textAlign:'center', lineHeight:1.35, maxWidth:'clamp(96px,14vw,160px)' }}>
+          <span style={{ fontSize:'clamp(11px,1.3vw,12.5px)', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:500, color:'var(--ink)', textAlign:'center', lineHeight:1.35, maxWidth:'clamp(96px,14vw,160px)', transition:'color .3s ease' }}>
             {label}
           </span>
         )}
       </>
     );
     const tileStyle: React.CSSProperties = { display:'flex', flexDirection:'column', alignItems:'center', gap:12, textDecoration:'none', flexShrink:0 };
-    if (!href) return <div key={c._id} style={tileStyle}>{inner}</div>;
+    if (!href) return <div key={key} className="cat-strip-tile" style={tileStyle}>{inner}</div>;
     return href.startsWith('/')
-      ? <Link key={c._id} href={href} aria-label={`Shop ${label || 'category'}`} className="cat-strip-tile" draggable={false} style={tileStyle}>{inner}</Link>
-      : <a key={c._id} href={href} aria-label={`Shop ${label || 'category'}`} className="cat-strip-tile" draggable={false} style={tileStyle}>{inner}</a>;
+      ? <Link key={key} href={href} aria-label={`Shop ${label || 'category'}`} className="cat-strip-tile" draggable={false} style={tileStyle}>{inner}</Link>
+      : <a key={key} href={href} aria-label={`Shop ${label || 'category'}`} className="cat-strip-tile" draggable={false} style={tileStyle}>{inner}</a>;
   };
+
+  const rows = marquee
+    ? Array.from({ length: copies }, (_, ci) => cats.map(c => tile(c, `${c._id}-${ci}`))).flat()
+    : cats.map(c => tile(c, c._id));
 
   return (
     <section aria-label="Shop by category" style={{ padding:'clamp(28px,4vw,44px) 0 0' }}>
       <style>{`
         .cat-strip-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
         .cat-strip-scroll::-webkit-scrollbar { display:none; }
-        /* width:max-content + margin:auto — centers when tiles fit, scrolls when they don't */
-        .cat-strip-row { display:flex; gap:clamp(18px,3.5vw,44px); width:max-content; margin:0 auto; padding:0 clamp(16px,3vw,24px); }
-        .cat-strip-tile .cat-strip-img { transition:box-shadow .25s ease, transform .25s ease; }
-        .cat-strip-tile:hover .cat-strip-img { box-shadow:0 0 0 2px var(--gold); transform:scale(1.03); }
+        /* Vertical padding gives the hover ring + pop scale room; overflow-x clips overflow-y too */
+        .cat-strip-row { display:flex; align-items:flex-start; gap:clamp(18px,3.5vw,44px); width:max-content; margin:0 auto; padding:16px clamp(24px,4vw,48px) 14px; }
+        .cat-strip-tile .cat-strip-img { transition:box-shadow .3s ease, transform .3s ease; }
+        .cat-strip-tile:hover .cat-strip-img { box-shadow:0 0 0 2px var(--gold), 0 10px 24px rgba(43,37,31,.14); transform:translateY(-6px) scale(1.08); }
+        .cat-strip-tile:hover span:last-child { color:var(--gold-d); }
       `}</style>
-      <div className="cat-strip-scroll">
+      <div
+        ref={scrollRef}
+        className="cat-strip-scroll"
+        onMouseEnter={pause}
+        onMouseLeave={() => resumeSoon(300)}
+        onTouchStart={pause}
+        onTouchEnd={() => resumeSoon()}
+        onTouchCancel={() => resumeSoon()}
+      >
         <div className="cat-strip-row">
-          {cats.map(tile)}
+          {rows}
         </div>
       </div>
     </section>
