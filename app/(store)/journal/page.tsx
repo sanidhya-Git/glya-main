@@ -143,7 +143,7 @@ export default function JournalPage() {
               <Link href={`/journal/${featured.slug || featured.id}`} className="jfeat jfeat-grid" style={{ textDecoration:'none', color:'inherit', cursor:'pointer' }}>
                 <div style={{ width:'100%', aspectRatio:'4/3', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:60, color:'var(--line)' }}>
                   {featured.coverImage
-                    ? <Image src={featured.coverImage} alt={featured.title} fill sizes="(max-width:820px) 100vw,55vw" className="jimg" style={{ objectFit:'cover' }} />
+                    ? <Image src={featured.coverImage} alt={featured.title} fill sizes="(max-width:820px) 100vw,55vw" className="jimg" style={{ objectFit:'contain' }} />
                     : <span>◈</span>
                   }
                   <span style={{ position:'absolute', top:16, left:16, background:'rgba(250,247,241,0.94)', fontSize:10.5, letterSpacing:'0.18em', textTransform:'uppercase', padding:'7px 14px', borderRadius:2, color:'var(--gold-d)', zIndex:1 }}>Featured story</span>
@@ -184,7 +184,7 @@ export default function JournalPage() {
                 <Link key={p.id} href={`/journal/${p.slug || p.id}`} className="jcard" style={{ textDecoration:'none', color:'inherit', cursor:'pointer', display:'block' }}>
                   <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
                     {p.coverImage
-                      ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:620px) 100vw,(max-width:980px) 50vw,33vw" className="jimg" style={{ objectFit:'cover' }} />
+                      ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:620px) 100vw,(max-width:980px) 50vw,33vw" className="jimg" style={{ objectFit:'contain' }} />
                       : <span>◈</span>
                     }
                   </div>

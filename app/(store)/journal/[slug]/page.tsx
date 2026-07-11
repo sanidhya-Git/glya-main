@@ -217,7 +217,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
           </div>
           <div style={{ width:'100%', aspectRatio:'4/3', background:'var(--paper2)', borderRadius:'clamp(20px,2.4vw,32px)', overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
             {art.coverImage
-              ? <Image src={art.coverImage} alt={art.title} fill priority sizes="(max-width:900px) 100vw,52vw" style={{ objectFit:'cover' }} />
+              ? <Image src={art.coverImage} alt={art.title} fill priority sizes="(max-width:900px) 100vw,52vw" style={{ objectFit:'contain' }} />
               : <span>◈</span>
             }
           </div>
@@ -301,7 +301,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
               <Link key={p.id} href={`/journal/${p.slug || p.id}`} className="jcard" style={{textDecoration:'none',color:'inherit',cursor:'pointer'}}>
                 <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
                   {p.coverImage
-                    ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" className="jimg" style={{ objectFit:'cover' }} />
+                    ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" className="jimg" style={{ objectFit:'contain' }} />
                     : <span>◈</span>
                   }
                 </div>

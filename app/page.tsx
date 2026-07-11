@@ -220,7 +220,7 @@ export default function Home() {
                 <Link key={post.id} href={`/journal/${post.slug || post.id}`} className="blog-card" style={{ textDecoration:'none', color:'inherit' }}>
                   <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:3, overflow:'hidden', position:'relative', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
                     {post.coverImage
-                      ? <Image src={post.coverImage} alt={post.title} fill sizes="(max-width:900px) 100vw,33vw" className="blog-img" style={{ objectFit:'cover' }} />
+                      ? <Image src={post.coverImage} alt={post.title} fill sizes="(max-width:900px) 100vw,33vw" className="blog-img" style={{ objectFit:'contain' }} />
                       : <span>◈</span>
                     }
                   </div>

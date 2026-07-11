@@ -31,7 +31,12 @@ export default function HeroCarousel() {
 
   const slide = (b: AdminBanner, i: number) => {
     const img = (
-      <Image src={b.imageUrl} alt={b.title || 'GLYA banner'} fill priority={i === 0} sizes="100vw" style={{ objectFit:'cover' }} />
+      <>
+        {/* blurred backdrop fills the frame so the full banner can show uncropped on top */}
+        <Image src={b.imageUrl} alt="" aria-hidden fill priority={i === 0} sizes="100vw"
+          style={{ objectFit:'cover', filter:'blur(28px) brightness(0.8)', transform:'scale(1.12)' }} />
+        <Image src={b.imageUrl} alt={b.title || 'GLYA banner'} fill priority={i === 0} sizes="100vw" style={{ objectFit:'contain' }} />
+      </>
     );
     // Custom link wins; otherwise a category routes to that category's products
     const href = b.link || (b.category ? `/browse?cat=${encodeURIComponent(b.category)}` : '');
