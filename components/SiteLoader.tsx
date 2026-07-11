@@ -18,8 +18,8 @@ export default function SiteLoader() {
     if (sessionStorage.getItem(SEEN_KEY)) { setStage('done'); return; }
     sessionStorage.setItem(SEEN_KEY, '1');
     const quick = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const t1 = setTimeout(() => setStage('hide'), quick ? 900 : 3700);
-    const t2 = setTimeout(() => setStage('done'), quick ? 1600 : 4500);
+    const t1 = setTimeout(() => setStage('hide'), quick ? 700 : 2100);
+    const t2 = setTimeout(() => setStage('done'), quick ? 1200 : 2700);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -46,19 +46,19 @@ export default function SiteLoader() {
         .gld-bar {
           opacity: 0;
           animation:
-            gldBarIn  .55s cubic-bezier(.2,.8,.3,1) .15s forwards,
-            gldBarOut .5s  ease 1.5s forwards;
+            gldBarIn  .4s cubic-bezier(.2,.8,.3,1) .1s forwards,
+            gldBarOut .4s ease .85s forwards;
         }
         @keyframes gldBarIn  { from { opacity:0; transform:translateY(20px) scale(.88); } to { opacity:1; transform:none; } }
         @keyframes gldBarOut { to   { opacity:0; transform:scale(.6) translateY(8px); filter:blur(6px); } }
-        .gld-shine { animation: gldShine 1s ease-in-out .5s; transform: translateX(-70px); }
+        .gld-shine { animation: gldShine .7s ease-in-out .3s; transform: translateX(-70px); }
         @keyframes gldShine { to { transform: translateX(180px); } }
 
         /* ── the spark between the two acts ── */
         .gld-spark {
           width: 26px; height: 26px; font-size: 26px; line-height: 1;
           color: var(--gold); text-align: center; opacity: 0;
-          animation: gldSpark .55s ease 1.72s;
+          animation: gldSpark .45s ease .95s;
         }
         @keyframes gldSpark {
           0%   { opacity: 0; transform: scale(.2) rotate(0deg); }
@@ -67,19 +67,19 @@ export default function SiteLoader() {
         }
 
         /* ── ACT 2 · the ring draws itself ── */
-        .gld-ring { opacity: 0; animation: gldRingIn .4s ease 1.9s forwards; }
+        .gld-ring { opacity: 0; animation: gldRingIn .3s ease 1.05s forwards; }
         @keyframes gldRingIn { to { opacity: 1; } }
         .gld-ring path, .gld-ring circle {
           stroke-dasharray: 1; stroke-dashoffset: 1;
-          animation: gldDraw 1s cubic-bezier(.45,0,.3,1) forwards;
+          animation: gldDraw .7s cubic-bezier(.45,0,.3,1) forwards;
         }
-        .gld-ring .gld-band { animation-delay: 1.9s; }
-        .gld-ring .gld-gem  { animation-delay: 2.25s; }
-        .gld-ring .gld-fct  { animation-delay: 2.55s; animation-duration: .7s; }
+        .gld-ring .gld-band { animation-delay: 1.05s; }
+        .gld-ring .gld-gem  { animation-delay: 1.3s; }
+        .gld-ring .gld-fct  { animation-delay: 1.5s; animation-duration: .5s; }
         @keyframes gldDraw { to { stroke-dashoffset: 0; } }
         .gld-tw {
           opacity: 0; transform-origin: center;
-          animation: gldTw 1.1s ease 3s;
+          animation: gldTw .9s ease 1.75s;
         }
         @keyframes gldTw {
           0%,100% { opacity: 0; transform: scale(.3); }
@@ -106,7 +106,7 @@ export default function SiteLoader() {
           margin-top: 14px;
           font-size: 10.5px; letter-spacing: .38em; padding-left: .38em;
           text-transform: uppercase; color: var(--muted);
-          opacity: 0; animation: gldLetter .7s ease 3.05s forwards;
+          opacity: 0; animation: gldLetter .6s ease 1.7s forwards;
         }
         .gld-line {
           width: 130px; height: 1px; background: var(--line);
@@ -116,7 +116,7 @@ export default function SiteLoader() {
           content: ''; position: absolute; inset: 0;
           background: linear-gradient(90deg, var(--gold), #E3C387);
           transform: scaleX(0); transform-origin: left;
-          animation: gldLine 3.3s cubic-bezier(.4,0,.2,1) .2s forwards;
+          animation: gldLine 1.9s cubic-bezier(.4,0,.2,1) .1s forwards;
         }
         @keyframes gldLine { to { transform: scaleX(1); } }
 
@@ -169,7 +169,7 @@ export default function SiteLoader() {
       {/* GLYA */}
       <div className="gld-word">
         {['G', 'L', 'Y', 'A'].map((ch, i) => (
-          <span key={ch} style={{ animationDelay: `${2.55 + i * 0.12}s` }}>{ch}</span>
+          <span key={ch} style={{ animationDelay: `${1.45 + i * 0.08}s` }}>{ch}</span>
         ))}
       </div>
       <div className="gld-tag">Fine Jewellery</div>
