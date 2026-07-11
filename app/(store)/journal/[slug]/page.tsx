@@ -163,7 +163,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
           line-height:1.4; color:var(--ink);
         }
         .journal-body ul, .journal-body ol { margin:20px 0 0 22px; color:var(--ink2); font-size:17px; line-height:1.85; font-weight:300; }
-        .journal-body img { max-width:100%; border-radius:4px; margin-top:24px; }
+        .journal-body img { max-width:100%; border-radius:18px; margin-top:24px; }
         .journal-body a { color:var(--gold-d); }
         .jimg { transition:transform 1s cubic-bezier(.22,.61,.21,1); }
         .jcard:hover .jimg { transform:scale(1.05); }
@@ -171,6 +171,20 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         .jcard:hover .jtitle { color:var(--gold-d); }
         .jshare { transition:border-color .2s ease, color .2s ease; }
         .jshare:hover { border-color:var(--gold-d); color:var(--gold-d); }
+
+        .jhero { display:grid; grid-template-columns:1fr 1.05fr; gap:clamp(28px,5vw,76px); align-items:center; }
+        @media (max-width:900px) { .jhero { grid-template-columns:1fr; gap:26px; } }
+
+        .jlayout { display:grid; grid-template-columns:224px minmax(0,1fr); gap:clamp(36px,6vw,88px); align-items:start; }
+        .jrail { position:sticky; top:96px; }
+        @media (max-width:900px) {
+          .jlayout { grid-template-columns:1fr; gap:28px; }
+          .jrail {
+            position:static; display:flex; flex-wrap:wrap; align-items:center; gap:14px 24px;
+            border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:14px 0;
+          }
+          .jrail-block { margin:0 !important; padding:0 !important; border:none !important; }
+        }
       `}</style>
 
       {/* READING PROGRESS */}
@@ -178,75 +192,89 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         <div style={{ width:`${progress}%`, height:'100%', background:'var(--gold-d)', transition:'width .12s linear' }} />
       </div>
 
-      <article style={{maxWidth:760,margin:'0 auto',padding:'clamp(24px,3vw,44px) 28px 0'}}>
-        <div style={{fontSize:12.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--muted)',marginBottom:24}}>
-          <Link href="/" style={{color:'var(--muted)',textDecoration:'none'}}>Home</Link> · <Link href="/journal" style={{color:'var(--muted)',textDecoration:'none'}}>Journal</Link> · <span style={{color:'var(--ink)'}}>{art.category}</span>
+      {/* HERO — text left, image right */}
+      <section style={{maxWidth:1360,margin:'0 auto',padding:'clamp(24px,3.5vw,56px) clamp(16px,3vw,28px) 0'}}>
+        <div className="jhero">
+          <div>
+            <div style={{fontSize:12.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--muted)',marginBottom:26}}>
+              <Link href="/" style={{color:'var(--muted)',textDecoration:'none'}}>Home</Link> · <Link href="/journal" style={{color:'var(--muted)',textDecoration:'none'}}>Journal</Link> · <span style={{color:'var(--ink)'}}>{art.category}</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:12,fontSize:12,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:18}}>
+              <span style={{width:28,height:1,background:'var(--gold)',display:'inline-block'}} />
+              <span>{art.category}</span>
+            </div>
+            <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(32px,3.6vw,54px)',lineHeight:1.04,letterSpacing:'-0.015em'}}>{art.title}</h1>
+            {art.excerpt && (
+              <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(18px,1.7vw,23px)',lineHeight:1.55,color:'var(--ink2)',fontStyle:'italic',marginTop:20,maxWidth:520}}>{art.excerpt}</p>
+            )}
+            <div style={{display:'flex',alignItems:'center',gap:14,fontSize:12.5,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted)',marginTop:26,paddingTop:20,borderTop:'1px solid var(--line)',flexWrap:'wrap'}}>
+              <span style={{color:'var(--ink)'}}>{art.author}</span>
+              <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
+              <span>{art.date}</span>
+              <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
+              <span>{readTimeOf(body, art.excerpt || '')}</span>
+            </div>
+          </div>
+          <div style={{ width:'100%', aspectRatio:'4/3', background:'var(--paper2)', borderRadius:'clamp(20px,2.4vw,32px)', overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
+            {art.coverImage
+              ? <Image src={art.coverImage} alt={art.title} fill priority sizes="(max-width:900px) 100vw,52vw" style={{ objectFit:'cover' }} />
+              : <span>◈</span>
+            }
+          </div>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:12,fontSize:12,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:16}}>
-          <span style={{width:28,height:1,background:'var(--gold)',display:'inline-block'}} />
-          <span>{art.category}</span>
-        </div>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(34px,5vw,60px)',lineHeight:1.02,letterSpacing:'-0.015em'}}>{art.title}</h1>
-        <div style={{display:'flex',alignItems:'center',gap:14,fontSize:12.5,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted)',marginTop:22,paddingTop:18,borderTop:'1px solid var(--line)',flexWrap:'wrap'}}>
-          <span style={{color:'var(--ink)'}}>{art.author}</span>
-          <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
-          <span>{art.date}</span>
-          <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
-          <span>{readTimeOf(body, art.excerpt || '')}</span>
-        </div>
-      </article>
+      </section>
 
-      <div style={{ maxWidth:1020, margin:'clamp(26px,3.5vw,40px) auto 0', padding:'0 clamp(16px,3vw,28px)' }}>
-        <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
-          {art.coverImage
-            ? <Image src={art.coverImage} alt={art.title} fill priority sizes="(max-width:1020px) 100vw,1020px" style={{ objectFit:'cover' }} />
-            : <span>◈</span>
-          }
-        </div>
-      </div>
-
-      <article style={{maxWidth:680,margin:'0 auto',padding:'clamp(30px,4.5vw,52px) 28px'}}>
-        {art.excerpt && (
-          <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,2.4vw,27px)',lineHeight:1.5,color:'var(--ink)',fontStyle:'italic',marginBottom:30}}>{art.excerpt}</p>
-        )}
-
-        {body
-          ? (isHtml
-              ? <div className="journal-body" dangerouslySetInnerHTML={{ __html: body }} />
-              : paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'jdrop' : undefined} style={P_STYLE}>{p}</p>))
-          : bodyLoading
-            ? (
-              <div>
-                <div className="journal-skel" style={{ width:'100%', height:14, marginTop:18 }} />
-                <div className="journal-skel" style={{ width:'96%', height:14, marginTop:12 }} />
-                <div className="journal-skel" style={{ width:'88%', height:14, marginTop:12 }} />
-                <div className="journal-skel" style={{ width:'92%', height:14, marginTop:30 }} />
-                <div className="journal-skel" style={{ width:'70%', height:14, marginTop:12 }} />
+      {/* BODY — sticky author rail left, article right */}
+      <section style={{maxWidth:1160,margin:'0 auto',padding:'clamp(32px,5vw,64px) clamp(16px,3vw,28px) clamp(28px,4vw,48px)'}}>
+        <div className="jlayout">
+          <aside className="jrail">
+            <div className="jrail-block" style={{display:'flex',alignItems:'center',gap:14}}>
+              <div style={{width:50,height:50,borderRadius:'50%',background:'var(--paper2)',border:'1px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:19,color:'var(--gold-d)',flexShrink:0}}>
+                {(art.author || 'G').split(' ').map(w=>w[0]).join('')}
               </div>
-            )
-            : null}
+              <div>
+                <div style={{fontSize:14.5,color:'var(--ink)'}}>{art.author}</div>
+                <div style={{fontSize:11.5,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginTop:2}}>The Glya Journal</div>
+              </div>
+            </div>
+            <div className="jrail-block" style={{margin:'22px 0 0',paddingTop:20,borderTop:'1px solid var(--line)',display:'flex',flexDirection:'column',gap:10,fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)'}}>
+              <span>{art.date}</span>
+              <span>{readTimeOf(body, art.excerpt || '')}</span>
+            </div>
+            <div className="jrail-block" style={{margin:'22px 0 0',paddingTop:20,borderTop:'1px solid var(--line)',display:'flex',flexDirection:'column',gap:12,alignItems:'flex-start'}}>
+              <button onClick={share} className="jshare" style={{cursor:'pointer',background:'transparent',border:'1px solid var(--line)',padding:'10px 18px',borderRadius:2,fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--muted)'}}>
+                {shared ? 'Link copied ✓' : 'Share'}
+              </button>
+              <Link href="/journal" style={{fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--gold-d)',textDecoration:'none'}}>← All stories</Link>
+            </div>
+          </aside>
 
-        {/* END ORNAMENT */}
-        <div style={{textAlign:'center',margin:'44px 0 0',display:'flex',alignItems:'center',gap:18,justifyContent:'center'}}>
-          <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
-          <span style={{color:'var(--gold)',fontSize:16}}>◈</span>
-          <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
-        </div>
+          <article style={{minWidth:0,maxWidth:720}}>
+            {body
+              ? (isHtml
+                  ? <div className="journal-body" dangerouslySetInnerHTML={{ __html: body }} />
+                  : paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'jdrop' : undefined} style={P_STYLE}>{p}</p>))
+              : bodyLoading
+                ? (
+                  <div>
+                    <div className="journal-skel" style={{ width:'100%', height:14, marginTop:18 }} />
+                    <div className="journal-skel" style={{ width:'96%', height:14, marginTop:12 }} />
+                    <div className="journal-skel" style={{ width:'88%', height:14, marginTop:12 }} />
+                    <div className="journal-skel" style={{ width:'92%', height:14, marginTop:30 }} />
+                    <div className="journal-skel" style={{ width:'70%', height:14, marginTop:12 }} />
+                  </div>
+                )
+                : null}
 
-        {/* AUTHOR */}
-        <div style={{marginTop:32,paddingTop:0,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-          <div style={{width:54,height:54,borderRadius:'50%',background:'var(--paper2)',border:'1px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:'var(--gold-d)',flexShrink:0}}>
-            {(art.author || 'G').split(' ').map(w=>w[0]).join('')}
-          </div>
-          <div style={{flex:1,minWidth:180}}>
-            <div style={{fontSize:15,color:'var(--ink)'}}>{art.author}</div>
-            <div style={{fontSize:12.5,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginTop:2}}>The Glya Journal</div>
-          </div>
-          <button onClick={share} className="jshare" style={{cursor:'pointer',background:'transparent',border:'1px solid var(--line)',padding:'10px 18px',borderRadius:2,fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--muted)'}}>
-            {shared ? 'Link copied ✓' : 'Share'}
-          </button>
+            {/* END ORNAMENT */}
+            <div style={{textAlign:'center',margin:'44px 0 0',display:'flex',alignItems:'center',gap:18,justifyContent:'center'}}>
+              <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
+              <span style={{color:'var(--gold)',fontSize:16}}>◈</span>
+              <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
+            </div>
+          </article>
         </div>
-      </article>
+      </section>
 
       {/* SHOP THE STORY */}
       {shopProducts.length > 0 && (
