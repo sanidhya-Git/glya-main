@@ -172,6 +172,65 @@ export async function fetchCategoryTree(): Promise<CategoryNode[]> {
   }
 }
 
+/* ── Customer profile & saved addresses (admin Customer collection) ── */
+
+export interface SavedAddress {
+  _id?: string;
+  label?: string;
+  def?: boolean;
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  country?: string;      // display name, e.g. "India"
+  countryCode?: string;  // ISO code for the checkout form, e.g. "IN"
+  pincode?: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  addresses: SavedAddress[];
+}
+
+/** Client-side: read the logged-in user's profile via the storefront API. */
+export async function fetchUserProfile(email: string): Promise<UserProfile | null> {
+  try {
+    const res = await fetch(`/api/profile?email=${encodeURIComponent(email)}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export type ProfileAction =
+  | { action: 'update'; email: string; name?: string; phone?: string; otp?: string; token?: string }
+  | { action: 'change-email'; email: string; newEmail: string; otp: string; token: string }
+  | { action: 'add-address'; email: string; address: SavedAddress }
+  | { action: 'delete-address'; email: string; addressId: string }
+  | { action: 'set-default'; email: string; addressId: string };
+
+/** Client-side: mutate the profile. Returns the fresh profile on success. */
+export async function postProfileAction(payload: ProfileAction): Promise<{ ok: boolean; error?: string; profile?: UserProfile }> {
+  try {
+    const res  = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: (data as { error?: string }).error || 'Something went wrong. Please try again.' };
+    return { ok: true, profile: data as UserProfile };
+  } catch {
+    return { ok: false, error: 'Something went wrong. Please try again.' };
+  }
+}
+
 export interface AdminOrderPayload {
   no: string;
   customer: string;
@@ -184,6 +243,8 @@ export interface AdminOrderPayload {
   date: string;
   isoDate?: string;
   address: string;
+  /** Structured delivery address — saved into the customer's address book by the admin. */
+  addressObj?: SavedAddress;
   lines: { name: string; meta: string; qty: number; priceStr: string }[];
   subtotalStr: string;
   discountStr: string;

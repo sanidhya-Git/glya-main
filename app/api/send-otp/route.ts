@@ -5,11 +5,16 @@ const SECRET = process.env.OTP_SECRET || 'glya-otp-fallback-secret';
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, intent } = await request.json();
 
     if (!email || !String(email).includes('@')) {
       return Response.json({ error: 'Invalid email address.' }, { status: 400 });
     }
+
+    const purpose =
+      intent === 'change-email'   ? 'confirm the email change on your GLYA account.' :
+      intent === 'update-profile' ? 'confirm the changes to your GLYA account details.' :
+      'verify your email address and continue to checkout.';
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -38,7 +43,7 @@ export async function POST(request: Request) {
           </div>
           <div style="padding:32px 32px 28px;">
             <p style="font-size:15px;color:#4A423A;line-height:1.7;margin:0 0 24px;">
-              Use the code below to verify your email address and continue to checkout.
+              Use the code below to ${purpose}
             </p>
             <div style="text-align:center;background:#fff;border:1px solid #E7DFD2;border-radius:4px;padding:28px;">
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6F6557;margin-bottom:12px;">Verification code</div>

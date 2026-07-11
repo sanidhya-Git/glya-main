@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useStore, useMetalRates, Order, OrderLine } from '@/lib/store';
 import { priceOf, inr, karatLabel } from '@/lib/catalog';
-import { createAdminOrder } from '@/lib/api';
+import { createAdminOrder, fetchUserProfile, postProfileAction, type SavedAddress } from '@/lib/api';
 import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 
 const shipOptions = [
@@ -49,10 +49,58 @@ export default function CheckoutPage() {
     country: 'IN', state: '', city: '', pin: '',
   });
 
-  /* Pre-fill email when user is already logged in */
+  /* ── Saved addresses (returning customers) ── */
+  const [savedAddrs, setSavedAddrs] = useState<SavedAddress[]>([]);
+  const [selAddrId,  setSelAddrId]  = useState<string>('new');
+
+  const applySaved = (a: SavedAddress) => {
+    const code = a.countryCode || COUNTRIES.find(c => c.name === a.country)?.code || 'IN';
+    setForm(f => ({
+      ...f,
+      first: a.firstName || '', last: a.lastName || '', mobile: a.mobile || '',
+      addr1: a.line1 || '', addr2: a.line2 || '',
+      country: code, state: a.state || '', city: a.city || '', pin: a.pincode || '',
+    }));
+  };
+
+  /* Pre-fill email + profile details when user is already logged in,
+     and load the address book so nothing has to be retyped. */
   useEffect(() => {
-    if (user?.email) setForm(f => ({ ...f, email: f.email || user.email }));
+    if (!user?.email) { setSavedAddrs([]); setSelAddrId('new'); return; }
+    const email = user.email;
+    setForm(f => ({ ...f, email: f.email || email }));
+    const formWasEmpty = !form.addr1;
+    let alive = true;
+    fetchUserProfile(email).then(p => {
+      if (!alive || !p) return;
+      const list = (p.addresses ?? []).filter(a => a.line1);
+      setSavedAddrs(list);
+      const parts = (p.name ?? '').trim().split(/\s+/).filter(Boolean);
+      setForm(f => ({
+        ...f,
+        first:  f.first  || parts[0] || '',
+        last:   f.last   || parts.slice(1).join(' '),
+        mobile: f.mobile || p.phone || '',
+      }));
+      const def = list.find(a => a.def) ?? list[0];
+      if (def?._id && formWasEmpty) { setSelAddrId(def._id); applySaved(def); }
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
+
+  async function deleteSaved(a: SavedAddress) {
+    if (!user?.email || !a._id) return;
+    if (!window.confirm('Remove this saved address?')) return;
+    const res = await postProfileAction({ action: 'delete-address', email: user.email, addressId: a._id });
+    if (res.ok && res.profile) {
+      setSavedAddrs((res.profile.addresses ?? []).filter(x => x.line1));
+      if (selAddrId === a._id) {
+        setSelAddrId('new');
+        setForm(f => ({ ...f, addr1: '', addr2: '', state: '', city: '', pin: '' }));
+      }
+    }
+  }
 
   const countryInfo = getCountry(form.country);
   const pincodeValid  = form.pin.length > 0 && validatePincode(form.pin, form.country);
@@ -149,6 +197,20 @@ export default function CheckoutPage() {
       date:        new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
       isoDate:     new Date().toISOString(),
       address:     addrStr,
+      /* Structured copy — saved into the customer's address book by the admin */
+      addressObj: {
+        label:       'Home',
+        firstName:   form.first,
+        lastName:    form.last,
+        mobile:      form.mobile,
+        line1:       form.addr1,
+        line2:       form.addr2,
+        city:        form.city,
+        state:       form.state,
+        country:     countryInfo?.name || form.country,
+        countryCode: form.country,
+        pincode:     form.pin,
+      },
       lines:       items.map(it => ({
         name:     it.p.name,
         meta:     `${it.metalLabel}${it.size ? ' · Size ' + it.size : ''}`,
@@ -309,6 +371,36 @@ export default function CheckoutPage() {
           <div style={{ display: 'grid', gap: 13 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery address</div>
 
+              {/* Saved addresses — returning customers pick one instead of retyping */}
+              {savedAddrs.length > 0 && (
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {savedAddrs.map(a => (
+                    <div key={a._id} onClick={() => { setSelAddrId(a._id!); applySaved(a); }} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'flex-start', border: `1px solid ${selAddrId === a._id ? 'var(--gold)' : 'var(--line)'}`, background: selAddrId === a._id ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '14px 16px' }}>
+                      <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                        {selAddrId === a._id && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14.5 }}>
+                          {a.firstName} {a.lastName}
+                          {a.def && <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-d)', border: '1px solid var(--gold)', borderRadius: 2, padding: '2px 7px', marginLeft: 8, verticalAlign: 'middle' }}>Default</span>}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3, lineHeight: 1.6 }}>
+                          {a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city}{a.state ? `, ${a.state}` : ''}{a.pincode ? ` – ${a.pincode}` : ''}<br />{a.mobile}
+                        </div>
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); deleteSaved(a); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#B4553B', textDecoration: 'underline', padding: 0, flexShrink: 0 }}>Delete</button>
+                    </div>
+                  ))}
+                  <div onClick={() => setSelAddrId('new')} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center', border: `1px solid ${selAddrId === 'new' ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '14px 16px' }}>
+                    <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {selAddrId === 'new' && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+                    </span>
+                    <div style={{ fontSize: 14.5 }}>Deliver to a new address</div>
+                  </div>
+                </div>
+              )}
+
+              {(savedAddrs.length === 0 || selAddrId === 'new') && (<>
               <div className="co-name-grid">
                 <input placeholder="First name" value={form.first} onChange={e => setForm(f => ({ ...f, first: e.target.value }))} style={inputStyle} />
                 <input placeholder="Last name"  value={form.last}  onChange={e => setForm(f => ({ ...f, last:  e.target.value }))} style={inputStyle} />
@@ -383,6 +475,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
+              </>)}
           </div>
 
           {/* ── Delivery ── */}
