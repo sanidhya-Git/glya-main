@@ -272,7 +272,6 @@ export default function Header() {
         ══════════════════════════════════════ */
         .gh {
           position: sticky; top: 0; z-index: 100;
-          height: 68px;
           background: rgba(250,247,241,0.97);
           backdrop-filter: blur(18px) saturate(1.4);
           -webkit-backdrop-filter: blur(18px) saturate(1.4);
@@ -284,7 +283,7 @@ export default function Header() {
         .gh-inner {
           max-width: 1440px; margin: 0 auto;
           padding: 0 clamp(16px,2.6vw,44px);
-          height: 100%;
+          height: 68px;
           display: grid;
           grid-template-columns: auto 1fr auto;
           align-items: center;
@@ -458,6 +457,22 @@ export default function Header() {
 
         .gh-ham { display: none !important; }
 
+        /* ── MOBILE SEARCH BAR (below top row) ── */
+        .gh-msearch {
+          display: none;
+          width: calc(100% - 32px);
+          margin: 0 16px 12px;
+          padding: 11px 16px;
+          align-items: center; gap: 10px;
+          background: #fff;
+          border: 1px solid var(--line); border-radius: 3px;
+          font-family: inherit; font-size: 13.5px; letter-spacing: .02em;
+          color: var(--muted); cursor: pointer; text-align: left;
+          transition: border-color .18s, box-shadow .18s;
+        }
+        .gh-msearch:active { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(176,141,87,.12); }
+        .gh-msearch svg { flex-shrink: 0; color: var(--gold-d); }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 1100px) {
           .gh-acct-text { display: none; }
@@ -467,9 +482,11 @@ export default function Header() {
           .gh-nav  { display: none !important; }
           .gh-div  { display: none !important; }
           .gh-acct { display: none !important; }
+          .gh-sbtn { display: none !important; }
           .gh-ham  { display: flex !important; }
           .gh-inner   { grid-template-columns: auto 1fr; }
           .gh-actions { justify-self: end; }
+          .gh-msearch { display: flex; }
         }
 
         /* ── SEARCH OVERLAY ── */
@@ -645,7 +662,7 @@ export default function Header() {
 
           {/* Actions */}
           <div className="gh-actions">
-            <button className="gh-ib" onClick={() => setSearchOpen(true)} aria-label="Search">
+            <button className="gh-ib gh-sbtn" onClick={() => setSearchOpen(true)} aria-label="Search">
               <IconSearch />
             </button>
             <Link href="/account?tab=wishlist" className="gh-ib" aria-label="Wishlist" data-fly-target="wish">
@@ -667,6 +684,12 @@ export default function Header() {
           </div>
 
         </div>
+
+        {/* Mobile-only search bar below the top row */}
+        <button className="gh-msearch" onClick={() => setSearchOpen(true)} aria-label="Search">
+          <IconSearch />
+          <span>Search for jewellery…</span>
+        </button>
       </header>
 
       {/* ════════════ SEARCH OVERLAY ════════════ */}

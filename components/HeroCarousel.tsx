@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import type { AdminBanner } from '@/lib/api';
 
-const ROTATE_MS = 3000;
+const ROTATE_MS = 2000;
 
 export default function HeroCarousel() {
   const adminBanners = useStore(s => s.adminBanners);
@@ -64,13 +64,23 @@ export default function HeroCarousel() {
 
   // Frame follows the current banner's own aspect ratio (full image, no crop/letterbox),
   // capped at 640px tall for very square/portrait uploads where the blur backdrop fills the sides.
+  // On mobile the frame never drops below 62vw — wide banners get extra height and the
+  // blur backdrop fills the top/bottom, so the image itself still shows uncropped.
   const ratio = ratios[banners[safeIdx]._id] ?? Object.values(ratios)[0];
-  const frameHeight = ratio ? `min(calc(100vw / ${ratio}), 640px)` : 'clamp(300px, 38vw, 640px)';
 
   return (
     <section aria-label="Featured collections">
+      <style>{`
+        .glya-hero { height: clamp(300px, 38vw, 640px); transition: height .5s ease; }
+        .glya-hero.hr { height: min(calc(100vw / var(--hr)), 640px); }
+        @media (max-width: 880px) {
+          .glya-hero { height: clamp(240px, 62vw, 560px); }
+          .glya-hero.hr { height: min(max(calc(100vw / var(--hr)), 62vw), 560px); }
+        }
+      `}</style>
       <div
-        style={{ position:'relative', overflow:'hidden', background:'#211C17', height:frameHeight, transition:'height .5s ease' }}
+        className={`glya-hero${ratio ? ' hr' : ''}`}
+        style={{ position:'relative', overflow:'hidden', background:'#211C17', ...(ratio ? { ['--hr' as string]: ratio } as React.CSSProperties : {}) }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onTouchStart={e => { touchX.current = e.touches[0].clientX; setPaused(true); }}
@@ -82,6 +92,7 @@ export default function HeroCarousel() {
           const dx = e.changedTouches[0].clientX - start;
           if (Math.abs(dx) > 48) (dx < 0 ? next : prev)();
         }}
+        onTouchCancel={() => { touchX.current = null; setPaused(false); }}
       >
         <div style={{ display:'flex', height:'100%', transform:`translateX(-${safeIdx * 100}%)`, transition:'transform .65s cubic-bezier(.4,0,.2,1)' }}>
           {banners.map(slide)}
