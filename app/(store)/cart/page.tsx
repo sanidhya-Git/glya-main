@@ -75,7 +75,7 @@ export default function CartPage() {
             <div key={i.key} style={{ display:'flex', gap:18, padding:'22px 0', borderBottom:'1px solid var(--line)' }}>
               <div style={{ width:110, height:130, flexShrink:0, background:'var(--paper2)', borderRadius:3, overflow:'hidden', position:'relative', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, color:'var(--line)' }}>
                 {i.img
-                  ? <Image src={i.img} alt={i.p.name} fill sizes="110px" style={{ objectFit:'cover' }} />
+                  ? <Image src={i.img} alt={i.p.name} fill sizes="110px" style={{ objectFit:'contain' }} />
                   : <span>◈</span>
                 }
               </div>

@@ -24,7 +24,7 @@ function readTimeOf(body: string, excerpt: string): string {
   return `${Math.max(2, Math.ceil(words / 200))} min read`;
 }
 
-const P_STYLE: React.CSSProperties = { color:'var(--ink2)', fontSize:17, lineHeight:1.8, fontWeight:300, marginTop:18 };
+const P_STYLE: React.CSSProperties = { color:'var(--ink2)', fontSize:17, lineHeight:1.85, fontWeight:300, marginTop:20 };
 
 export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -36,6 +36,8 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
 
   const [fullPost, setFullPost] = useState<AdminPost | null>(null);
   const [bodyLoading, setBodyLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [shared, setShared] = useState(false);
 
   const postId = listPost?.id;
   const listHasBody = Boolean(listPost?.body && listPost.body.trim());
@@ -52,6 +54,30 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
     });
     return () => { cancelled = true; };
   }, [postId, listHasBody]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement;
+      const max = el.scrollHeight - el.clientHeight;
+      setProgress(max > 0 ? Math.min(100, (el.scrollTop / max) * 100) : 0);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: document.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2200);
+    } catch { /* user dismissed the share sheet */ }
+  };
 
   /* ── LOADING ── */
   if (!journalLoaded) {
@@ -122,29 +148,47 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
           border:1px solid var(--line); border-radius:3px;
         }
         @keyframes journalShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-        .journal-body p { color:var(--ink2); font-size:17px; line-height:1.8; font-weight:300; margin-top:18px; }
+        .journal-body p { color:var(--ink2); font-size:17px; line-height:1.85; font-weight:300; margin-top:20px; }
+        .journal-body > p:first-of-type::first-letter, p.jdrop::first-letter {
+          font-family:'Cormorant Garamond',serif; font-size:3.4em; line-height:0.82;
+          float:left; padding:6px 10px 0 0; color:var(--gold-d); font-weight:500;
+        }
         .journal-body h1, .journal-body h2, .journal-body h3 {
           font-family:'Cormorant Garamond',serif; font-weight:500;
-          font-size:clamp(24px,3vw,32px); line-height:1.15; margin:34px 0 4px;
+          font-size:clamp(24px,3vw,32px); line-height:1.15; margin:38px 0 4px;
         }
         .journal-body blockquote {
-          border-left:2px solid var(--gold); padding:6px 0 6px 24px; margin:28px 0;
-          font-family:'Cormorant Garamond',serif; font-size:24px; font-style:italic;
+          border-left:2px solid var(--gold); padding:6px 0 6px 26px; margin:32px 0;
+          font-family:'Cormorant Garamond',serif; font-size:25px; font-style:italic;
           line-height:1.4; color:var(--ink);
         }
-        .journal-body ul, .journal-body ol { margin:18px 0 0 22px; color:var(--ink2); font-size:17px; line-height:1.8; font-weight:300; }
-        .journal-body img { max-width:100%; border-radius:4px; margin-top:22px; }
+        .journal-body ul, .journal-body ol { margin:20px 0 0 22px; color:var(--ink2); font-size:17px; line-height:1.85; font-weight:300; }
+        .journal-body img { max-width:100%; border-radius:4px; margin-top:24px; }
         .journal-body a { color:var(--gold-d); }
+        .jimg { transition:transform 1s cubic-bezier(.22,.61,.21,1); }
+        .jcard:hover .jimg { transform:scale(1.05); }
+        .jcard .jtitle { transition:color .25s ease; }
+        .jcard:hover .jtitle { color:var(--gold-d); }
+        .jshare { transition:border-color .2s ease, color .2s ease; }
+        .jshare:hover { border-color:var(--gold-d); color:var(--gold-d); }
       `}</style>
 
+      {/* READING PROGRESS */}
+      <div style={{ position:'fixed', top:0, left:0, right:0, height:2, zIndex:60, pointerEvents:'none' }}>
+        <div style={{ width:`${progress}%`, height:'100%', background:'var(--gold-d)', transition:'width .12s linear' }} />
+      </div>
+
       <article style={{maxWidth:760,margin:'0 auto',padding:'clamp(24px,3vw,44px) 28px 0'}}>
-        <div style={{fontSize:12.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--muted)',marginBottom:20}}>
+        <div style={{fontSize:12.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--muted)',marginBottom:24}}>
           <Link href="/" style={{color:'var(--muted)',textDecoration:'none'}}>Home</Link> · <Link href="/journal" style={{color:'var(--muted)',textDecoration:'none'}}>Journal</Link> · <span style={{color:'var(--ink)'}}>{art.category}</span>
         </div>
-        <div style={{fontSize:12,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:14}}>{art.category}</div>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(34px,5vw,58px)',lineHeight:1.03,letterSpacing:'-0.01em'}}>{art.title}</h1>
-        <div style={{display:'flex',alignItems:'center',gap:14,fontSize:12.5,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted)',marginTop:20,flexWrap:'wrap'}}>
-          <span>{art.author}</span>
+        <div style={{display:'flex',alignItems:'center',gap:12,fontSize:12,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:16}}>
+          <span style={{width:28,height:1,background:'var(--gold)',display:'inline-block'}} />
+          <span>{art.category}</span>
+        </div>
+        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(34px,5vw,60px)',lineHeight:1.02,letterSpacing:'-0.015em'}}>{art.title}</h1>
+        <div style={{display:'flex',alignItems:'center',gap:14,fontSize:12.5,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted)',marginTop:22,paddingTop:18,borderTop:'1px solid var(--line)',flexWrap:'wrap'}}>
+          <span style={{color:'var(--ink)'}}>{art.author}</span>
           <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
           <span>{art.date}</span>
           <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
@@ -152,24 +196,24 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         </div>
       </article>
 
-      <div style={{ maxWidth:960, margin:'clamp(24px,3vw,36px) auto 0', padding:'0 clamp(16px,3vw,28px)' }}>
+      <div style={{ maxWidth:1020, margin:'clamp(26px,3.5vw,40px) auto 0', padding:'0 clamp(16px,3vw,28px)' }}>
         <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
           {art.coverImage
-            ? <Image src={art.coverImage} alt={art.title} fill sizes="(max-width:960px) 100vw,960px" style={{ objectFit:'cover' }} />
+            ? <Image src={art.coverImage} alt={art.title} fill priority sizes="(max-width:1020px) 100vw,1020px" style={{ objectFit:'cover' }} />
             : <span>◈</span>
           }
         </div>
       </div>
 
-      <article style={{maxWidth:680,margin:'0 auto',padding:'clamp(28px,4vw,44px) 28px'}}>
+      <article style={{maxWidth:680,margin:'0 auto',padding:'clamp(30px,4.5vw,52px) 28px'}}>
         {art.excerpt && (
-          <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,2.4vw,26px)',lineHeight:1.5,color:'var(--ink)',fontStyle:'italic',marginBottom:28}}>{art.excerpt}</p>
+          <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,2.4vw,27px)',lineHeight:1.5,color:'var(--ink)',fontStyle:'italic',marginBottom:30}}>{art.excerpt}</p>
         )}
 
         {body
           ? (isHtml
               ? <div className="journal-body" dangerouslySetInnerHTML={{ __html: body }} />
-              : paragraphs.map((p, i) => <p key={i} style={P_STYLE}>{p}</p>))
+              : paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'jdrop' : undefined} style={P_STYLE}>{p}</p>))
           : bodyLoading
             ? (
               <div>
@@ -182,26 +226,35 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
             )
             : null}
 
+        {/* END ORNAMENT */}
+        <div style={{textAlign:'center',margin:'44px 0 0',display:'flex',alignItems:'center',gap:18,justifyContent:'center'}}>
+          <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
+          <span style={{color:'var(--gold)',fontSize:16}}>◈</span>
+          <span style={{width:56,height:1,background:'var(--line)',display:'inline-block'}} />
+        </div>
+
         {/* AUTHOR */}
-        <div style={{borderTop:'1px solid var(--line)',marginTop:36,paddingTop:24,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-          <div style={{width:52,height:52,borderRadius:'50%',background:'var(--paper2)',border:'1px solid var(--line)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:'var(--gold-d)',flexShrink:0}}>
+        <div style={{marginTop:32,paddingTop:0,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+          <div style={{width:54,height:54,borderRadius:'50%',background:'var(--paper2)',border:'1px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:'var(--gold-d)',flexShrink:0}}>
             {(art.author || 'G').split(' ').map(w=>w[0]).join('')}
           </div>
           <div style={{flex:1,minWidth:180}}>
-            <div style={{fontSize:15}}>{art.author}</div>
-            <div style={{fontSize:13,color:'var(--muted)'}}>The Glya Journal</div>
+            <div style={{fontSize:15,color:'var(--ink)'}}>{art.author}</div>
+            <div style={{fontSize:12.5,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginTop:2}}>The Glya Journal</div>
           </div>
-          <div style={{display:'flex',gap:10,fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--muted)'}}>
-            <span style={{cursor:'pointer',border:'1px solid var(--line)',padding:'8px 14px',borderRadius:2}}>Share</span>
-            <span style={{cursor:'pointer',border:'1px solid var(--line)',padding:'8px 14px',borderRadius:2}}>Save</span>
-          </div>
+          <button onClick={share} className="jshare" style={{cursor:'pointer',background:'transparent',border:'1px solid var(--line)',padding:'10px 18px',borderRadius:2,fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--muted)'}}>
+            {shared ? 'Link copied ✓' : 'Share'}
+          </button>
         </div>
       </article>
 
       {/* SHOP THE STORY */}
       {shopProducts.length > 0 && (
-        <section style={{maxWidth:1000,margin:'0 auto',padding:'clamp(10px,2vw,20px) 28px clamp(20px,3vw,32px)'}}>
-          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(24px,3vw,32px)',textAlign:'center',marginBottom:24}}>Shop the story</h3>
+        <section style={{maxWidth:1000,margin:'0 auto',padding:'clamp(10px,2vw,20px) 28px clamp(24px,3vw,36px)'}}>
+          <div style={{textAlign:'center',marginBottom:28}}>
+            <div style={{fontSize:11.5,letterSpacing:'0.24em',textTransform:'uppercase',color:'var(--gold-d)',marginBottom:10}}>From this story</div>
+            <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(24px,3vw,34px)',lineHeight:1}}>Shop the story</h3>
+          </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,38vw),1fr))',gap:'clamp(14px,2vw,24px)'}}>
             {shopProducts.map(p => <ProductCard key={p.id} product={p} size="sm" />)}
           </div>
@@ -210,19 +263,23 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
 
       {/* MORE STORIES */}
       {more.length > 0 && (
-        <section style={{maxWidth:1360,margin:'0 auto',padding:'clamp(24px,4vw,44px) 28px clamp(30px,4vw,56px)',borderTop:'1px solid var(--line)'}}>
-          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(24px,3vw,34px)',marginBottom:24}}>More from the Journal</h3>
+        <section style={{maxWidth:1360,margin:'0 auto',padding:'clamp(28px,4vw,48px) 28px clamp(36px,5vw,64px)',borderTop:'1px solid var(--line)'}}>
+          <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:14,marginBottom:28,flexWrap:'wrap'}}>
+            <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(24px,3vw,36px)',lineHeight:1}}>More from the Journal</h3>
+            <Link href="/journal" style={{fontSize:12,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--gold-d)',textDecoration:'none'}}>All stories →</Link>
+          </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'clamp(18px,3vw,32px)'}}>
             {more.map(p => (
-              <Link key={p.id} href={`/journal/${p.slug || p.id}`} style={{textDecoration:'none',color:'inherit',cursor:'pointer'}}>
+              <Link key={p.id} href={`/journal/${p.slug || p.id}`} className="jcard" style={{textDecoration:'none',color:'inherit',cursor:'pointer'}}>
                 <div style={{ width:'100%', aspectRatio:'3/2', background:'var(--paper2)', borderRadius:3, overflow:'hidden', border:'1px solid var(--line)', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
                   {p.coverImage
-                    ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" style={{ objectFit:'cover' }} />
+                    ? <Image src={p.coverImage} alt={p.title} fill sizes="(max-width:700px) 100vw,33vw" className="jimg" style={{ objectFit:'cover' }} />
                     : <span>◈</span>
                   }
                 </div>
-                <div style={{fontSize:11.5,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--gold-d)',margin:'14px 0 7px'}}>{p.category}</div>
-                <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:22,lineHeight:1.15}}>{p.title}</h3>
+                <div style={{fontSize:11.5,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--gold-d)',margin:'16px 0 8px'}}>{p.category}</div>
+                <h3 className="jtitle" style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:22,lineHeight:1.15}}>{p.title}</h3>
+                <div style={{fontSize:11.5,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginTop:10}}>{p.date}</div>
               </Link>
             ))}
           </div>

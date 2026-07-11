@@ -307,7 +307,7 @@ function AccountContent() {
                   const inner = (
                     <div style={{ display:'flex', gap:10, alignItems:'center', minWidth:200, flexShrink:0 }}>
                       <div style={{ width:56, height:66, background:'var(--paper2)', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, color:'var(--line)', flexShrink:0, position:'relative', overflow:'hidden' }}>
-                        {img ? <Image src={img} alt={l.name} fill sizes="56px" style={{ objectFit:'cover' }} /> : '◈'}
+                        {img ? <Image src={img} alt={l.name} fill sizes="56px" style={{ objectFit:'contain' }} /> : '◈'}
                       </div>
                       <div>
                         <div style={{ fontSize:14, fontFamily:"'Cormorant Garamond',serif", color:'var(--ink)' }}>{l.name}</div>
@@ -351,7 +351,7 @@ function AccountContent() {
                 <div key={p.id} style={{ border:'1px solid var(--line)', borderRadius:2, overflow:'hidden' }}>
                   <Link href={`/product/${p.id}`} style={{ textDecoration:'none', color:'inherit' }}>
                     <div style={{ height:200, background:'var(--paper2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)', position:'relative', overflow:'hidden' }}>
-                      {img ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw, 25vw" style={{ objectFit:'cover' }} /> : '◈'}
+                      {img ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw, 25vw" style={{ objectFit:'contain' }} /> : '◈'}
                     </div>
                     <div style={{ padding:'12px 14px' }}>
                       <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17 }}>{p.name}</div>

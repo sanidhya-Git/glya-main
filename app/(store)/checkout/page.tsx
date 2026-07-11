@@ -538,7 +538,7 @@ export default function CheckoutPage() {
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0, borderRadius: 3, overflow: 'hidden', background: 'var(--line)' }}>
-                    {img && <Image src={img} alt={it.p.name} fill sizes="52px" style={{ objectFit: 'cover' }} />}
+                    {img && <Image src={img} alt={it.p.name} fill sizes="52px" style={{ objectFit: 'contain' }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.p.name}</div>

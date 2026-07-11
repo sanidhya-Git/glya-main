@@ -49,6 +49,12 @@ export default function Home() {
         .trust-item { padding:clamp(16px,2.5vw,28px) clamp(12px,2vw,22px); text-align:center; border-right:1px solid var(--line); }
         .trust-item:last-child { border-right:none; }
         .blog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px); }
+        .blog-card .blog-img { transition:transform 1s cubic-bezier(.22,.61,.21,1); }
+        .blog-card:hover .blog-img { transform:scale(1.05); }
+        .blog-card .blog-title { transition:color .25s ease; }
+        .blog-card:hover .blog-title { color:var(--gold-d); }
+        .blog-card .blog-arrow { display:inline-block; transition:transform .25s ease; }
+        .blog-card:hover .blog-arrow { transform:translateX(6px); }
         .home-skel {
           background:linear-gradient(100deg, var(--paper2) 30%, #F3EDE1 50%, var(--paper2) 70%);
           background-size:200% 100%;
@@ -211,16 +217,22 @@ export default function Home() {
           {blogs.length > 0 ? (
             <div className="blog-grid">
               {blogs.map(post => (
-                <Link key={post.id} href={`/journal/${post.id}`} style={{ textDecoration:'none', color:'inherit' }}>
+                <Link key={post.id} href={`/journal/${post.slug || post.id}`} className="blog-card" style={{ textDecoration:'none', color:'inherit' }}>
                   <div style={{ width:'100%', aspectRatio:'16/9', background:'var(--paper2)', borderRadius:3, overflow:'hidden', position:'relative', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>
                     {post.coverImage
-                      ? <Image src={post.coverImage} alt={post.title} fill sizes="(max-width:900px) 100vw,33vw" style={{ objectFit:'cover' }} />
+                      ? <Image src={post.coverImage} alt={post.title} fill sizes="(max-width:900px) 100vw,33vw" className="blog-img" style={{ objectFit:'cover' }} />
                       : <span>◈</span>
                     }
                   </div>
                   <div style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', margin:'14px 0 8px' }}>{post.category}</div>
-                  <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(18px,2vw,24px)', lineHeight:1.2 }}>{post.title}</h3>
+                  <h3 className="blog-title" style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(18px,2vw,24px)', lineHeight:1.2 }}>{post.title}</h3>
                   <p style={{ color:'var(--ink2)', fontSize:14, lineHeight:1.65, marginTop:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{post.excerpt}</p>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginTop:12 }}>
+                    <span style={{ fontSize:11.5, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)' }}>{post.date}</span>
+                    <span style={{ fontSize:11.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-d)', display:'inline-flex', alignItems:'center', gap:7 }}>
+                      Read <span className="blog-arrow">→</span>
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>

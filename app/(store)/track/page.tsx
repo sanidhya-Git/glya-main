@@ -183,7 +183,7 @@ function TrackInner() {
               return (
               <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '14px 18px', borderTop: i === 0 ? 'none' : '1px solid var(--line)' }}>
                 <div style={{ width: 46, height: 52, background: 'var(--paper2)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--line)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-                  {img ? <Image src={img} alt={l.name} fill sizes="46px" style={{ objectFit: 'cover' }} /> : '◈'}
+                  {img ? <Image src={img} alt={l.name} fill sizes="46px" style={{ objectFit: 'contain' }} /> : '◈'}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontFamily: "'Cormorant Garamond',serif" }}>{l.name}</div>

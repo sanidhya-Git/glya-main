@@ -108,7 +108,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <div className="pdp-gallery-sticky">
           <div ref={galleryRef} style={{ position:'relative', width:'100%', aspectRatio:'1/1', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
             {activeImg
-              ? <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'cover' }} />
+              ? <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'contain' }} />
               : <span>◈</span>
             }
           </div>
@@ -117,7 +117,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {images.slice(0,4).map((img, i) => (
                 <div key={i} onClick={() => setGalleryIdx(i)}
                   style={{ cursor:'pointer', border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`, borderRadius:3, overflow:'hidden', aspectRatio:'1/1', position:'relative', background:'var(--paper2)', transition:'border-color .18s' }}>
-                  <Image src={img} alt={p.name} fill sizes="100px" style={{ objectFit:'cover' }} />
+                  <Image src={img} alt={p.name} fill sizes="100px" style={{ objectFit:'contain' }} />
                 </div>
               ))}
             </div>
