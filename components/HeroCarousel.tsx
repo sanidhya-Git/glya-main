@@ -63,9 +63,9 @@ export default function HeroCarousel() {
   };
 
   // Frame follows the current banner's own aspect ratio (full image, no crop/letterbox),
-  // capped at 640px tall for very square/portrait uploads where the blur backdrop fills the sides.
-  // On mobile the frame never drops below 62vw — wide banners get extra height and the
-  // blur backdrop fills the top/bottom, so the image itself still shows uncropped.
+  // capped at 640px tall (560px on mobile) for very square/portrait uploads where the
+  // blur backdrop fills the sides. The frame matches the image ratio on all viewports,
+  // so the banner fills the container edge-to-edge with no letterbox strips.
   const ratio = ratios[banners[safeIdx]._id] ?? Object.values(ratios)[0];
 
   return (
@@ -74,8 +74,8 @@ export default function HeroCarousel() {
         .glya-hero { height: clamp(300px, 38vw, 640px); transition: height .5s ease; }
         .glya-hero.hr { height: min(calc(100vw / var(--hr)), 640px); }
         @media (max-width: 880px) {
-          .glya-hero { height: clamp(240px, 62vw, 560px); }
-          .glya-hero.hr { height: min(max(calc(100vw / var(--hr)), 62vw), 560px); }
+          .glya-hero { height: clamp(160px, 62vw, 560px); }
+          .glya-hero.hr { height: min(calc(100vw / var(--hr)), 560px); }
         }
       `}</style>
       <div

@@ -47,6 +47,19 @@ export interface AdminBanner {
   order: number;
 }
 
+/** Round "shop by category" tile shown on the home page below the hero banners. */
+export interface AdminFeaturedCategory {
+  _id: string;
+  /** Label under the circle — falls back to `category` when empty. */
+  name: string;
+  imageUrl: string;
+  /** Category name — clicking the tile opens /browse?cat=<category> unless a custom link is set. */
+  category?: string;
+  link?: string;
+  active: boolean;
+  order: number;
+}
+
 /* catPath = [main, sub, product-category] names from the admin tree, e.g.
    ["Gold", "BK Gold", "Pendants"]. `cat` stays the deepest (display) name. */
 export type StorefrontProduct = Product & { images?: string[]; stock?: number; catPath?: string[] };
@@ -133,6 +146,17 @@ export async function fetchAdminBanners(): Promise<AdminBanner[]> {
     if (!res.ok) return [];
     const data: AdminBanner[] = await res.json();
     return data.filter(b => b.active && b.imageUrl).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchFeaturedCategories(): Promise<AdminFeaturedCategory[]> {
+  try {
+    const res = await fetch(`${BASE}/api/featured-categories?active=1`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data: AdminFeaturedCategory[] = await res.json();
+    return data.filter(c => c.active !== false && c.imageUrl).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   } catch {
     return [];
   }

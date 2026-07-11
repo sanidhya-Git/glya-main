@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
+import CategoryStrip from '@/components/CategoryStrip';
 import SiteLoader from '@/components/SiteLoader';
 
 const DEFAULT_CATS = [
@@ -83,6 +84,9 @@ export default function Home() {
 
         {/* ── HERO (admin banners carousel, static fallback) ── */}
         <HeroCarousel />
+
+        {/* ── SHOP BY CATEGORY (admin round tiles, hidden when none) ── */}
+        <CategoryStrip />
 
         {/* ── TRUST BAND ── */}
         <div className="trust-grid" style={{ maxWidth:1180, margin:'0 auto', marginTop:'clamp(32px,5vw,56px)', marginLeft:'clamp(16px,3vw,auto)', marginRight:'clamp(16px,3vw,auto)' }}>

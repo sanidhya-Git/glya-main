@@ -198,6 +198,9 @@ const IconChevron = () => (
   </svg>
 );
 
+const SEARCH_HINTS = ['Gold Rings', 'Diamond Earrings', 'Necklaces', 'Bridal Sets', 'Bangles'];
+const HINT_MS = 2500;
+
 export default function Header() {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -218,6 +221,14 @@ export default function Header() {
      a flat category list keeps the original hardcoded navbar. */
   const hasTree = categoryTree.some(n => (n.children ?? []).length > 0);
   const nav = hasTree ? buildNavFromTree(categoryTree) : NAV;
+
+  /* Rotating placeholder for the mobile search bar */
+  const hints = adminCategories.length > 1 ? adminCategories : SEARCH_HINTS;
+  const [hintIdx, setHintIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setHintIdx(i => i + 1), HINT_MS);
+    return () => clearInterval(t);
+  }, []);
 
   const suggestions = search.trim().length > 1
     ? adminProducts.filter(p =>
@@ -472,6 +483,9 @@ export default function Header() {
         }
         .gh-msearch:active { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(176,141,87,.12); }
         .gh-msearch svg { flex-shrink: 0; color: var(--gold-d); }
+        .gh-msearch-ph { display: inline-flex; align-items: baseline; gap: 4px; overflow: hidden; white-space: nowrap; }
+        .gh-msearch-rot { display: inline-block; color: var(--gold-d); animation: ghHint .45s cubic-bezier(.22,.61,.21,1) both; }
+        @keyframes ghHint { from { opacity: 0; transform: translateY(110%); } to { opacity: 1; transform: translateY(0); } }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 1100px) {
@@ -688,7 +702,10 @@ export default function Header() {
         {/* Mobile-only search bar below the top row */}
         <button className="gh-msearch" onClick={() => setSearchOpen(true)} aria-label="Search">
           <IconSearch />
-          <span>Search for jewellery…</span>
+          <span className="gh-msearch-ph">
+            Search
+            <span key={hintIdx} className="gh-msearch-rot">&ldquo;{hints[hintIdx % hints.length]}&rdquo;</span>
+          </span>
         </button>
       </header>
 
