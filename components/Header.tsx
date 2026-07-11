@@ -468,6 +468,8 @@ export default function Header() {
           .gh-div  { display: none !important; }
           .gh-acct { display: none !important; }
           .gh-ham  { display: flex !important; }
+          .gh-inner   { grid-template-columns: auto 1fr; }
+          .gh-actions { justify-self: end; }
         }
 
         /* ── SEARCH OVERLAY ── */

@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { useStore } from '@/lib/store';
+import { useStore, useMetalRates } from '@/lib/store';
 import { priceOf, inr } from '@/lib/catalog';
 
 export default function AdminProductsPage() {
   const goldRate       = useStore(s => s.goldRate);
+  const rates          = useMetalRates();
   const stock          = useStore(s => s.stock);
   const adminProducts  = useStore(s => s.adminProducts);
   const productsLoaded = useStore(s => s.productsLoaded);
@@ -61,7 +62,7 @@ export default function AdminProductsPage() {
                 <td colSpan={8} style={{ padding: '28px 14px', textAlign: 'center', color: 'var(--admin-muted)', fontSize: 13.5 }}>No products found.</td>
               </tr>
             ) : filtered.map(p => {
-              const pr      = priceOf(p, p.karat, goldRate);
+              const pr      = priceOf(p, p.karat, rates);
               const qty     = stock[p.id] ?? p.stock ?? 5;
               const stockBg = qty === 0 ? 'rgba(180,85,59,0.12)' : qty <= 2 ? 'rgba(176,141,87,0.12)' : 'rgba(47,122,91,0.1)';
               const stockC  = qty === 0 ? '#B4553B' : qty <= 2 ? '#B08D57' : '#2F7A5B';

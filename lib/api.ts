@@ -55,9 +55,10 @@ export type StorefrontProduct = Product & { images?: string[]; stock?: number; c
 function parseMetal(metal: string): { metal: string; karat: string } {
   const m = metal.trim();
   if (m === 'PT950' || m.toLowerCase().startsWith('platinum')) return { metal: 'Platinum', karat: 'PT950' };
+  if (m.startsWith('DIA') || m.toLowerCase().startsWith('diamond')) return { metal: 'Diamond', karat: m.startsWith('DIA') ? m : 'DIA' };
   if (m === '18K' || m.includes('18')) return { metal: 'Gold', karat: '18K' };
   if (m === '22K' || m.includes('22')) return { metal: 'Gold', karat: '22K' };
-  if (m.toLowerCase().includes('silver')) return { metal: 'Silver', karat: '925' };
+  if (m === '925' || m.toLowerCase().includes('silver')) return { metal: 'Silver', karat: '925' };
   return { metal: m, karat: m };
 }
 
@@ -106,7 +107,7 @@ export async function fetchAdminProducts(): Promise<StorefrontProduct[]> {
   }
 }
 
-export async function fetchAdminPricing(): Promise<{ goldRate24k: number } | null> {
+export async function fetchAdminPricing(): Promise<{ goldRate24k?: number; silverRate?: number; platinumRate?: number } | null> {
   try {
     const res = await fetch(`${BASE}/api/pricing`, { cache: 'no-store' });
     if (!res.ok) return null;

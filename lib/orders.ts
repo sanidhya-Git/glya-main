@@ -16,7 +16,7 @@ export function adminOrderToOrder(o: AdminOrderPayload): Order {
       productId: 0,
       name:      l.name,
       karat:     metalStr.split(' ')[0] || '',
-      metal:     metalStr.includes('Gold') ? 'Gold' : metalStr.includes('Silver') ? 'Silver' : 'Platinum',
+      metal:     metalStr.includes('Gold') ? 'Gold' : metalStr.includes('Silver') ? 'Silver' : metalStr.includes('Diamond') ? 'Diamond' : 'Platinum',
       size:      sizeMatch ? sizeMatch[1] : null,
       engraving: '',
       qty:       l.qty,

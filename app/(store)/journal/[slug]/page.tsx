@@ -31,7 +31,6 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
   const adminJournal  = useStore(s => s.adminJournal);
   const journalLoaded = useStore(s => s.journalLoaded);
   const adminProducts = useStore(s => s.adminProducts);
-  const goldRate      = useStore(s => s.goldRate);
 
   const listPost = adminJournal.find(p => p.slug === slug || p.id === slug) ?? null;
 
@@ -203,8 +202,8 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
       {shopProducts.length > 0 && (
         <section style={{maxWidth:1000,margin:'0 auto',padding:'clamp(10px,2vw,20px) 28px clamp(20px,3vw,32px)'}}>
           <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:500,fontSize:'clamp(24px,3vw,32px)',textAlign:'center',marginBottom:24}}>Shop the story</h3>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'clamp(14px,2vw,24px)'}}>
-            {shopProducts.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} size="sm" />)}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,38vw),1fr))',gap:'clamp(14px,2vw,24px)'}}>
+            {shopProducts.map(p => <ProductCard key={p.id} product={p} size="sm" />)}
           </div>
         </section>
       )}

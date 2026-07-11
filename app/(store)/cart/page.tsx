@@ -3,25 +3,25 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/lib/store';
-import { priceOf, inr } from '@/lib/catalog';
+import { useStore, useMetalRates } from '@/lib/store';
+import { priceOf, inr, karatLabel } from '@/lib/catalog';
 
 export default function CartPage() {
   const router = useRouter();
   const { cart, changeQty, removeItem, coupon, setCoupon, couponApplied, applyCoupon, clearCoupon, giftWrap, toggleGiftWrap, insurance, toggleInsurance } = useStore();
   const [applying, setApplying] = useState(false);
-  const goldRate      = useStore(s => s.goldRate);
+  const rates         = useMetalRates();
   const adminProducts  = useStore(s => s.adminProducts);
   const productsLoaded = useStore(s => s.productsLoaded);
 
   const rawItems = cart.map(it => {
     const p  = adminProducts.find(x => x.id === it.id);
     if (!p) return null;
-    const pr  = priceOf(p, it.karat, goldRate);
+    const pr  = priceOf(p, it.karat, rates);
     const qty = it.qty;
     const line = pr.total * qty;
     const img  = p.images?.[0];
-    return { ...it, p, img, priceStr: inr(pr.total), lineStr: inr(line), lineNum: line, metalLabel: it.karat === 'PT950' ? 'Platinum 950' : it.karat + ' Gold' };
+    return { ...it, p, img, priceStr: inr(pr.total), lineStr: inr(line), lineNum: line, metalLabel: karatLabel(it.karat) };
   });
   const items = rawItems.filter(Boolean) as NonNullable<typeof rawItems[0]>[];
 

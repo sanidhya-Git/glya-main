@@ -10,14 +10,21 @@ const hover = {
 export default function Footer() {
   return (
     <footer style={{ background:'var(--ink)', color:'#C9C0B0', marginTop:'clamp(40px,6vw,90px)' }}>
+      <style>{`
+        .ft-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:clamp(24px,3vw,36px); }
+        @media (max-width: 640px) {
+          .ft-grid { grid-template-columns:1fr 1fr; gap:30px 20px; }
+          .ft-brand, .ft-news { grid-column: 1 / -1; }
+        }
+      `}</style>
       <div style={{ maxWidth:1360, margin:'0 auto', padding:'clamp(40px,5vw,70px) clamp(16px,3vw,28px)' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:'clamp(24px,3vw,36px)' }}>
+        <div className="ft-grid">
 
           {/* BRAND */}
-          <div style={{ gridColumn: 'span 1' }}>
+          <div className="ft-brand">
             <Link href="/" style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:30, letterSpacing:'0.3em', paddingLeft:'0.3em', color:'#fff', textDecoration:'none', display:'block' }}>GLYA</Link>
             <p style={{ marginTop:16, fontSize:13.5, lineHeight:1.7, fontWeight:300, maxWidth:240 }}>Certified fine jewellery, priced transparently to the live gold rate. Designed and hallmarked in India.</p>
-            <div style={{ display:'flex', gap:14, marginTop:20 }}>
+            <div style={{ display:'flex', gap:14, marginTop:20, flexWrap:'wrap' }}>
               {['Instagram','Pinterest','YouTube'].map(s => (
                 <span key={s} style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', cursor:'pointer', color:'#9C9284' }}
                   onMouseEnter={e => (e.currentTarget.style.color='var(--gold)')}
@@ -67,7 +74,7 @@ export default function Footer() {
           </div>
 
           {/* NEWSLETTER */}
-          <div>
+          <div className="ft-news">
             <div style={{ fontSize:11.5, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--gold)', marginBottom:16 }}>Stay in the light</div>
             <p style={{ fontSize:13, fontWeight:300, marginBottom:14, lineHeight:1.6 }}>Early access to collections &amp; private events.</p>
             <div style={{ display:'flex', border:'1px solid rgba(201,192,176,0.3)', borderRadius:2, overflow:'hidden' }}>

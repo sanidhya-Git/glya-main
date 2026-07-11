@@ -8,12 +8,12 @@ const COUPONS = [
   { code: 'WELCOME', label: 'Welcome ₹5,000', type: 'Fixed',      desc: '₹5,000 flat off first order' },
 ];
 
-const PLATINUM_RATE = 3380;
-
 export default function AdminPricing() {
-  const goldRate    = useStore(s => s.goldRate);
-  const setGoldRate = useStore(s => s.setGoldRate);
-  const orders      = useStore(s => s.orders);
+  const goldRate     = useStore(s => s.goldRate);
+  const setGoldRate  = useStore(s => s.setGoldRate);
+  const silverRate   = useStore(s => s.silverRate);
+  const platinumRate = useStore(s => s.platinumRate);
+  const orders       = useStore(s => s.orders);
 
   const [makingPct, setMakingPct] = useState(12);
   const [wastage,   setWastage]   = useState(5);
@@ -76,7 +76,11 @@ export default function AdminPricing() {
               </div>
               <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
                 <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Platinum · per g</div>
-                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(PLATINUM_RATE)}</div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(platinumRate)}</div>
+              </div>
+              <div style={{ border:'1px solid #E7DFD2', borderRadius:4, padding:14 }}>
+                <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6F6557' }}>Silver · per g</div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, marginTop:8 }}>{inr(silverRate)}</div>
               </div>
             </div>
           </div>

@@ -3,8 +3,8 @@ import { useState, useRef, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/lib/store';
-import { priceOf, inr, sizeInfo } from '@/lib/catalog';
+import { useStore, useMetalRates } from '@/lib/store';
+import { priceOf, inr, sizeInfo, karatLabel } from '@/lib/catalog';
 import { flyToHeader, popElement } from '@/lib/fly';
 import ProductCard from '@/components/ProductCard';
 import type { StorefrontProduct } from '@/lib/api';
@@ -13,6 +13,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const { id }    = use(params);
   const router    = useRouter();
   const goldRate      = useStore(s => s.goldRate);
+  const rates         = useMetalRates();
   const wishlist      = useStore(s => s.wishlist);
   const toggleWish    = useStore(s => s.toggleWish);
   const addToCart     = useStore(s => s.addToCart);
@@ -52,11 +53,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     </div>
   );
 
-  const pr     = priceOf(p, karat, goldRate);
+  const pr     = priceOf(p, karat, rates);
   const si     = sizeInfo(p);
   const wished = wishlist.includes(p.id);
   const rate22 = inr(Math.round(goldRate * 0.916));
-  const karats = p.metal === 'Platinum' ? ['PT950'] : (p.cat === 'Rings' || p.cat === 'Necklaces') ? ['18K','22K'] : ['22K','18K'];
+  const karats = p.metal === 'Platinum' ? ['PT950'] : p.metal === 'Silver' ? ['925'] : p.metal === 'Diamond' ? [p.karat] : (p.cat === 'Rings' || p.cat === 'Necklaces') ? ['18K','22K'] : ['22K','18K'];
 
   const accordions = [
     { title: 'Description',    body: p.blurb || `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS.` },
@@ -148,7 +149,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginTop:10, fontSize:12.5, color:'var(--em)', background:'rgba(47,74,63,0.06)', padding:'7px 12px', borderRadius:2 }}>
             <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--em)' }}></span>
-            Live price · updates with the {rate22}/g gold rate
+            {p.metal === 'Diamond'
+              ? 'Live price · based on the certified stone value'
+              : p.metal === 'Platinum'
+              ? `Live price · updates with the ${inr(rates.platinum)}/g platinum rate`
+              : p.metal === 'Silver'
+              ? `Live price · updates with the ${inr(rates.silver)}/g silver rate`
+              : `Live price · updates with the ${rate22}/g gold rate`}
           </div>
 
           {/* KARAT */}
@@ -158,7 +165,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {karats.map(k => (
                 <div key={k} onClick={() => setKarat(k)}
                   style={{ cursor:'pointer', padding:'12px 20px', border:`1px solid ${karat===k?'var(--gold)':'var(--line)'}`, background:karat===k?'rgba(176,141,87,0.08)':'transparent', color:karat===k?'#93733E':'var(--ink)', borderRadius:2, fontSize:14, transition:'border-color .15s, background .15s, color .15s' }}>
-                  {k === 'PT950' ? 'Platinum 950' : k + ' Yellow Gold'}
+                  {karatLabel(k)}
                 </div>
               ))}
             </div>
@@ -254,8 +261,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       {related.length > 0 && (
         <section style={{ marginTop:'clamp(40px,6vw,80px)' }}>
           <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(26px,3vw,38px)', marginBottom:24 }}>You may also love</h2>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'clamp(14px,2vw,24px)' }}>
-            {related.map(r => <ProductCard key={r.id} product={r} goldRate={goldRate} />)}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,42vw),1fr))', gap:'clamp(14px,2vw,24px)' }}>
+            {related.map(r => <ProductCard key={r.id} product={r} />)}
           </div>
         </section>
       )}

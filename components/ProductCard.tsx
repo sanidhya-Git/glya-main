@@ -2,22 +2,22 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useStore } from '@/lib/store';
+import { useStore, useMetalRates } from '@/lib/store';
 import { Product, priceOf, inr, metalLabel } from '@/lib/catalog';
 import { flyToHeader, popElement } from '@/lib/fly';
 import type { StorefrontProduct } from '@/lib/api';
 
 interface Props {
   product: Product;
-  goldRate: number;
   size?: 'sm' | 'md';
 }
 
-export default function ProductCard({ product: p, goldRate, size = 'md' }: Props) {
+export default function ProductCard({ product: p, size = 'md' }: Props) {
   const wishlist   = useStore(s => s.wishlist);
   const toggleWish = useStore(s => s.toggleWish);
+  const rates      = useMetalRates();
   const wished     = wishlist.includes(p.id);
-  const pr         = priceOf(p, undefined, goldRate);
+  const pr         = priceOf(p, undefined, rates);
   const img        = (p as StorefrontProduct).images?.[0];
   const imgWrap    = useRef<HTMLDivElement>(null);
 

@@ -2,7 +2,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useStore } from '@/lib/store';
+import { useStore, useMetalRates } from '@/lib/store';
 import { inr, priceOf } from '@/lib/catalog';
 import ProductCard from '@/components/ProductCard';
 
@@ -48,6 +48,7 @@ function dp(val: string | null): string { return val ? decodeURIComponent(val.re
 function BrowseContent() {
   const searchParams    = useSearchParams();
   const goldRate        = useStore(s => s.goldRate);
+  const rates           = useMetalRates();
   const adminProducts   = useStore(s => s.adminProducts);
   const adminCategories = useStore(s => s.adminCategories);
   const productsLoaded  = useStore(s => s.productsLoaded);
@@ -103,7 +104,7 @@ function BrowseContent() {
           <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(26px,3.6vw,42px)', marginTop:12, color:'var(--ink)' }}>Curating the collection</h1>
           <p style={{ color:'var(--muted)', fontSize:13.5, marginTop:8, letterSpacing:'.04em' }}>Fetching pieces at today&rsquo;s gold rate…</p>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'clamp(12px,2vw,24px)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,42vw),1fr))', gap:'clamp(12px,2vw,24px)' }}>
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} style={{ border:'1px solid var(--line)', borderRadius:3, overflow:'hidden', background:'var(--paper)' }}>
               <div style={{ aspectRatio:'1/1', background:'linear-gradient(90deg, var(--paper2) 25%, rgba(176,141,87,0.10) 50%, var(--paper2) 75%)', backgroundSize:'920px 100%', animation:'glyaShimmer 1.5s linear infinite' }} />
@@ -156,7 +157,7 @@ function BrowseContent() {
   );
 
   /* sort */
-  const priceMap = new Map(products.map(p => [p.id, priceOf(p, undefined, goldRate).total]));
+  const priceMap = new Map(products.map(p => [p.id, priceOf(p, undefined, rates).total]));
   if (sort === 'priceLow')  list.sort((a, b) => (priceMap.get(a.id)||0) - (priceMap.get(b.id)||0));
   if (sort === 'priceHigh') list.sort((a, b) => (priceMap.get(b.id)||0) - (priceMap.get(a.id)||0));
   if (sort === 'rating')    list.sort((a, b) => b.rating - a.rating);
@@ -338,8 +339,8 @@ function BrowseContent() {
                   </button>
                 )}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'clamp(12px,2vw,24px)' }}>
-                {list.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,42vw),1fr))', gap:'clamp(12px,2vw,24px)' }}>
+                {list.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
             </>
           ) : products.length === 0 ? (

@@ -22,7 +22,6 @@ const DEFAULT_CATS = [
 const ICONS = ['◉','◈','○','◎','✦','▲','◇','⬡','◐','◑'];
 
 export default function Home() {
-  const goldRate        = useStore(s => s.goldRate);
   const adminProducts   = useStore(s => s.adminProducts);
   const productsLoaded  = useStore(s => s.productsLoaded);
   const adminJournal    = useStore(s => s.adminJournal);
@@ -144,7 +143,7 @@ export default function Home() {
               <Link href="/browse" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>View all →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
-              {trending.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+              {trending.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </section>
         ) : (
@@ -195,7 +194,7 @@ export default function Home() {
               <Link href="/browse?tag=New" style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>See new →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
-              {newArr.map(p => <ProductCard key={p.id} product={p} goldRate={goldRate} />)}
+              {newArr.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </section>
         )}

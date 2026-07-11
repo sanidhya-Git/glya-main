@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { useStore } from '@/lib/store';
+import { useStore, useMetalRates } from '@/lib/store';
 import { inr, priceOf } from '@/lib/catalog';
 
 export default function AdminInventoryPage() {
   const stock          = useStore(s => s.stock);
   const setStock       = useStore(s => s.setStock);
-  const goldRate       = useStore(s => s.goldRate);
+  const rates          = useMetalRates();
   const adminProducts  = useStore(s => s.adminProducts);
   const productsLoaded = useStore(s => s.productsLoaded);
   const [search,  setSearch]  = useState('');
@@ -64,7 +64,7 @@ export default function AdminInventoryPage() {
             ) : filtered.map(p => {
               const qty     = stock[p.id] ?? p.stock ?? 5;
               const isEdit  = p.id in editing;
-              const pr      = priceOf(p, p.karat, goldRate);
+              const pr      = priceOf(p, p.karat, rates);
               const stockBg = qty === 0 ? 'rgba(180,85,59,0.12)' : qty <= 2 ? 'rgba(176,141,87,0.12)' : 'rgba(47,122,91,0.1)';
               const stockC  = qty === 0 ? '#B4553B' : qty <= 2 ? '#B08D57' : '#2F7A5B';
               return (

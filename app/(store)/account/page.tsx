@@ -2,13 +2,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useStore } from '@/lib/store';
-import { inr } from '@/lib/catalog';
+import Image from 'next/image';
+import { useStore, useMetalRates, type OrderLine } from '@/lib/store';
+import { inr, priceOf } from '@/lib/catalog';
 
-const TABS = ['Orders', 'Wishlist', 'Rewards', 'Profile', 'Addresses'];
+const TABS = ['Orders', 'Wishlist', 'Profile', 'Addresses'];
 
 const TAB_MAP: Record<string, string> = {
-  orders: 'Orders', wishlist: 'Wishlist', rewards: 'Rewards',
+  orders: 'Orders', wishlist: 'Wishlist',
   profile: 'Profile', addresses: 'Addresses',
 };
 
@@ -41,18 +42,18 @@ function AccountContent() {
       .catch(() => {});
   }, [user?.email, mergeOrders]);
 
+  const rates      = useMetalRates();
   const latest     = orders[0];
   const firstName  = latest?.address.firstName || 'Guest';
   const lastName   = latest?.address.lastName  || '';
-  const totalSpend = orders.reduce((a, o) => a + o.total, 0);
-  const points     = Math.round(totalSpend / 100);
-  const tier       = points >= 5000 ? 'Platinum' : points >= 1000 ? 'Gold Circle' : 'Silver';
-  // Light-bg text needs the darker shades; the dark rewards card needs the lighter ones
-  const tierColor      = tier === 'Platinum' ? '#7C5FA0' : tier === 'Gold Circle' ? '#785D30' : '#6F6557';
-  const tierColorDark  = tier === 'Platinum' ? '#9B7FBA' : tier === 'Gold Circle' ? '#B08D57' : '#9C9284';
 
   const wishLoading = !productsLoaded && wishlist.length > 0;
   const wishItems   = adminProducts.filter(p => wishlist.includes(p.id));
+
+  /* Admin-merged orders carry productId 0, so fall back to a name match */
+  const lineProduct = (l: OrderLine) =>
+    adminProducts.find(p => p.id === l.productId) ??
+    adminProducts.find(p => p.name.toLowerCase() === l.name.toLowerCase());
 
   return (
     <main style={{ maxWidth:1200, margin:'0 auto', padding:'clamp(20px,3vw,48px) clamp(16px,3vw,28px)', animation:'glyaFade 0.5s ease' }}>
@@ -65,10 +66,6 @@ function AccountContent() {
         <div>
           <p style={{ fontSize:11.5, letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--muted)' }}>My account</p>
           <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(28px,4vw,46px)', marginTop:6 }}>{firstName} {lastName}</h1>
-        </div>
-        <div style={{ textAlign:'right' }}>
-          <div style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', color:tierColor }}>{tier}</div>
-          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,28px)' }}>{points.toLocaleString('en-IN')} pts</div>
         </div>
       </div>
 
@@ -102,16 +99,28 @@ function AccountContent() {
                 </div>
               </div>
               <div style={{ padding:'14px 18px', display:'flex', gap:12, overflowX:'auto' }}>
-                {o.lines.map((l, li) => (
-                  <div key={li} style={{ display:'flex', gap:10, alignItems:'center', minWidth:180, flexShrink:0 }}>
-                    <div style={{ width:44, height:52, background:'var(--paper2)', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, color:'var(--line)', flexShrink:0 }}>◈</div>
-                    <div>
-                      <div style={{ fontSize:13, fontFamily:"'Cormorant Garamond',serif" }}>{l.name}</div>
-                      <div style={{ fontSize:11.5, color:'var(--muted)' }}>{l.karat} · Qty {l.qty}</div>
-                      <div style={{ fontSize:13, color:'var(--em)', marginTop:2 }}>{inr(l.unitPrice)}</div>
+                {o.lines.map((l, li) => {
+                  const prod = lineProduct(l);
+                  const img  = prod?.images?.[0];
+                  const inner = (
+                    <div style={{ display:'flex', gap:10, alignItems:'center', minWidth:200, flexShrink:0 }}>
+                      <div style={{ width:56, height:66, background:'var(--paper2)', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, color:'var(--line)', flexShrink:0, position:'relative', overflow:'hidden' }}>
+                        {img ? <Image src={img} alt={l.name} fill sizes="56px" style={{ objectFit:'cover' }} /> : '◈'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:14, fontFamily:"'Cormorant Garamond',serif", color:'var(--ink)' }}>{l.name}</div>
+                        <div style={{ fontSize:11.5, color:'var(--muted)' }}>{l.karat} {l.metal} · Qty {l.qty}{l.size ? ` · Size ${l.size}` : ''}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:2 }}>
+                          <span style={{ fontSize:13, color:'var(--em)' }}>{inr(l.unitPrice)}</span>
+                          {prod && prod.rating > 0 && <span style={{ fontSize:11.5, color:'var(--muted)' }}>★ {prod.rating.toFixed(1)}</span>}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                  return prod
+                    ? <Link key={li} href={`/product/${prod.id}`} style={{ textDecoration:'none' }}>{inner}</Link>
+                    : <div key={li}>{inner}</div>;
+                })}
               </div>
             </div>
           ))}
@@ -132,14 +141,23 @@ function AccountContent() {
               <Link href="/browse" style={{ display:'inline-block', marginTop:16, padding:'12px 28px', border:'1px solid var(--ink)', fontSize:12.5, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none', color:'var(--ink)' }}>Explore pieces</Link>
             </div>
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:18 }}>
-              {wishItems.map(p => (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,42vw),1fr))', gap:18 }}>
+              {wishItems.map(p => {
+                const img = p.images?.[0];
+                const pr  = priceOf(p, undefined, rates);
+                return (
                 <div key={p.id} style={{ border:'1px solid var(--line)', borderRadius:2, overflow:'hidden' }}>
                   <Link href={`/product/${p.id}`} style={{ textDecoration:'none', color:'inherit' }}>
-                    <div style={{ height:200, background:'var(--paper2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)' }}>◈</div>
+                    <div style={{ height:200, background:'var(--paper2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44, color:'var(--line)', position:'relative', overflow:'hidden' }}>
+                      {img ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw, 25vw" style={{ objectFit:'cover' }} /> : '◈'}
+                    </div>
                     <div style={{ padding:'12px 14px' }}>
                       <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17 }}>{p.name}</div>
                       <div style={{ fontSize:11.5, color:'var(--muted)', marginTop:2 }}>{p.karat} {p.metal}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
+                        <span style={{ fontSize:14.5, fontWeight:500 }}>{inr(pr.total)}</span>
+                        {p.rating > 0 && <span style={{ fontSize:12, color:'var(--muted)' }}>★ {p.rating.toFixed(1)}</span>}
+                      </div>
                     </div>
                   </Link>
                   <div style={{ padding:'0 14px 12px', display:'flex', gap:7 }}>
@@ -147,38 +165,10 @@ function AccountContent() {
                     <button onClick={() => toggleWish(p.id)} style={{ cursor:'pointer', border:'1px solid var(--line)', background:'transparent', padding:'9px 12px', fontSize:11.5, letterSpacing:'0.08em', textTransform:'uppercase', borderRadius:2, color:'var(--muted)' }}>Remove</button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
-        </div>
-      )}
-
-      {tab === 'Rewards' && (
-        <div style={{ maxWidth:640 }}>
-          <div style={{ border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
-            <div style={{ background:'var(--ink)', color:'#EDE6D8', padding:'clamp(22px,3vw,32px) clamp(18px,3vw,28px)', textAlign:'center' }}>
-              <div style={{ fontSize:11, letterSpacing:'0.16em', textTransform:'uppercase', color:tierColorDark }}>{tier}</div>
-              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(32px,4vw,42px)', marginTop:6 }}>{points.toLocaleString('en-IN')} pts</div>
-              <div style={{ fontSize:13, color:'#9E958A', marginTop:4 }}>Total spend {inr(totalSpend)}</div>
-            </div>
-            <div style={{ padding:'clamp(18px,3vw,24px)', display:'grid', gap:12 }}>
-              {[
-                { tier:'Silver',     req:'0 pts',      color:'#8B8272', textColor:'#6F6557' },
-                { tier:'Gold Circle',req:'1,000 pts',  color:'#B08D57', textColor:'#785D30' },
-                { tier:'Platinum',   req:'5,000 pts',  color:'#9B7FBA', textColor:'#7C5FA0' },
-              ].map(r => (
-                <div key={r.tier} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 14px', border:`1px solid ${r.tier===tier?r.color:'var(--line)'}`, borderRadius:2, background:r.tier===tier?`${r.color}08`:'transparent' }}>
-                  <div style={{ display:'flex', gap:9, alignItems:'center' }}>
-                    <span style={{ width:9, height:9, borderRadius:'50%', background:r.color, display:'inline-block', flexShrink:0 }}></span>
-                    <span style={{ fontSize:14 }}>{r.tier}</span>
-                  </div>
-                  <span style={{ fontSize:12.5, color:'var(--muted)' }}>{r.req}</span>
-                  {r.tier === tier && <span style={{ fontSize:11, color:r.textColor, letterSpacing:'0.06em' }}>Current</span>}
-                </div>
-              ))}
-              <p style={{ fontSize:12.5, color:'var(--muted)', marginTop:4 }}>Earn 1 point per ₹100 spent. Redeem 100 pts = ₹50 off.</p>
-            </div>
-          </div>
         </div>
       )}
 

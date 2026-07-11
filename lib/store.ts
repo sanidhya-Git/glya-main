@@ -59,6 +59,10 @@ interface GlyaStore {
 
   goldRate: number;
   setGoldRate: (r: number) => void;
+  silverRate: number;
+  setSilverRate: (r: number) => void;
+  platinumRate: number;
+  setPlatinumRate: (r: number) => void;
 
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'qty'>) => void;
@@ -119,6 +123,10 @@ export const useStore = create<GlyaStore>()(
 
       goldRate: 7180,
       setGoldRate: (r) => set({ goldRate: r }),
+      silverRate: 94,
+      setSilverRate: (r) => set({ silverRate: r }),
+      platinumRate: 3380,
+      setPlatinumRate: (r) => set({ platinumRate: r }),
 
       cart: [],
       addToCart: (item) => {
@@ -220,3 +228,11 @@ export const useStore = create<GlyaStore>()(
     }
   )
 );
+
+/** Live per-gram rates for every metal — pass straight into priceOf(). */
+export function useMetalRates() {
+  const gold     = useStore(s => s.goldRate);
+  const silver   = useStore(s => s.silverRate);
+  const platinum = useStore(s => s.platinumRate);
+  return { gold, silver, platinum };
+}

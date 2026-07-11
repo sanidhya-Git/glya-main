@@ -8,7 +8,6 @@ export default function WishlistPage() {
   const toggleWish    = useStore(s => s.toggleWish);
   const adminProducts  = useStore(s => s.adminProducts);
   const productsLoaded = useStore(s => s.productsLoaded);
-  const goldRate       = useStore(s => s.goldRate);
 
   const loading   = !productsLoaded && wishlist.length > 0;
   const wishItems = adminProducts.filter(p => wishlist.includes(p.id));
@@ -66,10 +65,10 @@ export default function WishlistPage() {
       ) : (
         <>
           {/* PRODUCT GRID */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,22vw,240px),1fr))', gap: 'clamp(16px,2.5vw,28px)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(clamp(160px,22vw,240px),42vw),1fr))', gap: 'clamp(16px,2.5vw,28px)' }}>
             {wishItems.map(p => (
               <div key={p.id} style={{ position: 'relative' }}>
-                <ProductCard product={p} goldRate={goldRate} />
+                <ProductCard product={p} />
               </div>
             ))}
           </div>

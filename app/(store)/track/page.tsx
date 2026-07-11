@@ -2,6 +2,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import { inr } from '@/lib/catalog';
 
@@ -40,6 +41,7 @@ function TrackInner() {
   const params  = useSearchParams();
   const orderNo = params.get('order') || '';
   const orders  = useStore(s => s.orders);
+  const adminProducts = useStore(s => s.adminProducts);
   const order   = orders.find(o => o.orderNo === orderNo);
 
   const [adminOrder, setAdminOrder] = useState<{ no: string; status: string; payment: string; date: string; total: string; lines: { name: string; meta: string; qty: number; priceStr: string }[] } | null>(null);
@@ -174,16 +176,23 @@ function TrackInner() {
 
           <div style={{ border: '1px solid var(--line)', borderRadius: 3, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', background: 'var(--paper2)', fontFamily: "'Cormorant Garamond',serif", fontSize: 20 }}>Items</div>
-            {order.lines.map((l, i) => (
+            {order.lines.map((l, i) => {
+              const prod = adminProducts.find(p => p.id === l.productId) ??
+                           adminProducts.find(p => p.name.toLowerCase() === l.name.toLowerCase());
+              const img  = prod?.images?.[0];
+              return (
               <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '14px 18px', borderTop: i === 0 ? 'none' : '1px solid var(--line)' }}>
-                <div style={{ width: 46, height: 52, background: 'var(--paper2)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--line)', flexShrink: 0 }}>◈</div>
+                <div style={{ width: 46, height: 52, background: 'var(--paper2)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--line)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                  {img ? <Image src={img} alt={l.name} fill sizes="46px" style={{ objectFit: 'cover' }} /> : '◈'}
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontFamily: "'Cormorant Garamond',serif" }}>{l.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{l.karat} · Qty {l.qty}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{l.karat} {l.metal} · Qty {l.qty}</div>
                 </div>
                 <div style={{ fontSize: 14 }}>{inr(l.unitPrice * l.qty)}</div>
               </div>
-            ))}
+              );
+            })}
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', fontSize: 15 }}>
               <span>Total paid</span>
               <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22 }}>{inr(order.total)}</span>
