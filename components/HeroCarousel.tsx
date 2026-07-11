@@ -15,6 +15,8 @@ export default function HeroCarousel() {
   );
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  // natural width/height ratio per banner so the frame can match the uploaded image exactly
+  const [ratios, setRatios] = useState<Record<string, number>>({});
   const touchX = useRef<number | null>(null);
 
   useEffect(() => {
@@ -35,7 +37,12 @@ export default function HeroCarousel() {
         {/* blurred backdrop fills the frame so the full banner can show uncropped on top */}
         <Image src={b.imageUrl} alt="" aria-hidden fill priority={i === 0} sizes="100vw"
           style={{ objectFit:'cover', filter:'blur(28px) brightness(0.8)', transform:'scale(1.12)' }} />
-        <Image src={b.imageUrl} alt={b.title || 'GLYA banner'} fill priority={i === 0} sizes="100vw" style={{ objectFit:'contain' }} />
+        <Image src={b.imageUrl} alt={b.title || 'GLYA banner'} fill priority={i === 0} sizes="100vw" style={{ objectFit:'contain' }}
+          onLoad={e => {
+            const el = e.currentTarget;
+            if (el.naturalWidth && el.naturalHeight)
+              setRatios(r => r[b._id] ? r : { ...r, [b._id]: el.naturalWidth / el.naturalHeight });
+          }} />
       </>
     );
     // Custom link wins; otherwise a category routes to that category's products
@@ -55,10 +62,15 @@ export default function HeroCarousel() {
     boxShadow:'0 2px 10px rgba(0,0,0,0.18)',
   };
 
+  // Frame follows the current banner's own aspect ratio (full image, no crop/letterbox),
+  // capped at 640px tall for very square/portrait uploads where the blur backdrop fills the sides.
+  const ratio = ratios[banners[safeIdx]._id] ?? Object.values(ratios)[0];
+  const frameHeight = ratio ? `min(calc(100vw / ${ratio}), 640px)` : 'clamp(300px, 38vw, 640px)';
+
   return (
     <section aria-label="Featured collections">
       <div
-        style={{ position:'relative', overflow:'hidden', background:'#211C17', height:'clamp(300px, 38vw, 640px)' }}
+        style={{ position:'relative', overflow:'hidden', background:'#211C17', height:frameHeight, transition:'height .5s ease' }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onTouchStart={e => { touchX.current = e.touches[0].clientX; setPaused(true); }}
