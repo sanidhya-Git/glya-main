@@ -242,24 +242,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── NEWSLETTER ── */}
-        <section style={{ background:'var(--ink)', margin:'clamp(44px,6vw,72px) 0 0' }}>
-          <div style={{ maxWidth:680, margin:'0 auto', padding:'clamp(44px,6vw,72px) clamp(20px,4vw,40px)', textAlign:'center' }}>
-            <p style={{ fontSize:11, letterSpacing:'0.22em', textTransform:'uppercase', color:'#B08D57', marginBottom:12 }}>Stay in the light</p>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:400, fontSize:'clamp(26px,3.5vw,44px)', color:'#EDE6D8', lineHeight:1.05 }}>
-              Early access. Private events.<br />New collections first.
-            </h2>
-            <div style={{ display:'flex', maxWidth:420, margin:'28px auto 0', border:'1px solid rgba(201,192,176,0.3)', borderRadius:2, overflow:'hidden', background:'rgba(255,255,255,0.05)' }}>
-              <input placeholder="Your email address" style={{ flex:1, background:'transparent', border:'none', padding:'14px 16px', fontSize:14, color:'#fff' }} />
-              <button
-                style={{ cursor:'pointer', background:'var(--gold)', border:'none', color:'var(--ink)', padding:'0 22px', fontSize:12, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, whiteSpace:'nowrap' }}
-                onMouseEnter={e => (e.currentTarget.style.background='#C9A865')}
-                onMouseLeave={e => (e.currentTarget.style.background='var(--gold)')}
-              >Subscribe</button>
-            </div>
-            <p style={{ fontSize:12.5, color:'#9C9284', marginTop:12 }}>No spam. Unsubscribe any time.</p>
-          </div>
-        </section>
 
       </main>
       <Footer />
