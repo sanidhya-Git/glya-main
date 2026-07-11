@@ -26,7 +26,6 @@ export interface AdminPost {
   id: string;
   title: string;
   category: string;
-  author: string;
   status: string;
   date: string;
   views: number;

@@ -208,8 +208,6 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
               <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(18px,1.7vw,23px)',lineHeight:1.55,color:'var(--ink2)',fontStyle:'italic',marginTop:20,maxWidth:520}}>{art.excerpt}</p>
             )}
             <div style={{display:'flex',alignItems:'center',gap:14,fontSize:12.5,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted)',marginTop:26,paddingTop:20,borderTop:'1px solid var(--line)',flexWrap:'wrap'}}>
-              <span style={{color:'var(--ink)'}}>{art.author}</span>
-              <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
               <span>{art.date}</span>
               <span style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)',display:'inline-block'}}></span>
               <span>{readTimeOf(body, art.excerpt || '')}</span>
@@ -230,11 +228,10 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
           <aside className="jrail">
             <div className="jrail-block" style={{display:'flex',alignItems:'center',gap:14}}>
               <div style={{width:50,height:50,borderRadius:'50%',background:'var(--paper2)',border:'1px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:19,color:'var(--gold-d)',flexShrink:0}}>
-                {(art.author || 'G').split(' ').map(w=>w[0]).join('')}
+                G
               </div>
               <div>
-                <div style={{fontSize:14.5,color:'var(--ink)'}}>{art.author}</div>
-                <div style={{fontSize:11.5,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginTop:2}}>The Glya Journal</div>
+                <div style={{fontSize:14.5,color:'var(--ink)'}}>The Glya Journal</div>
               </div>
             </div>
             <div className="jrail-block" style={{margin:'22px 0 0',paddingTop:20,borderTop:'1px solid var(--line)',display:'flex',flexDirection:'column',gap:10,fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)'}}>

@@ -156,7 +156,6 @@ export default function JournalPage() {
                   <h2 className="jtitle" style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:500, fontSize:'clamp(28px,4.2vw,52px)', lineHeight:1.04, letterSpacing:'-0.01em' }}>{featured.title}</h2>
                   <p style={{ maxWidth:480, margin:'20px 0 24px', color:'var(--ink2)', fontSize:16, lineHeight:1.75, fontWeight:300 }}>{featured.excerpt}</p>
                   <div style={{ display:'flex', alignItems:'center', gap:14, fontSize:12, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', flexWrap:'wrap' }}>
-                    {featured.author && <><span>{featured.author}</span><span style={{ width:4, height:4, borderRadius:'50%', background:'var(--gold)', display:'inline-block' }} /></>}
                     <span>{featured.date}</span>
                     <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--gold)', display:'inline-block' }} />
                     <span>{readTime(featured)}</span>
