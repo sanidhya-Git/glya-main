@@ -106,7 +106,7 @@ function BrowseContent() {
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(200px,42vw),1fr))', gap:'clamp(12px,2vw,24px)' }}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} style={{ border:'1px solid var(--line)', borderRadius:3, overflow:'hidden', background:'var(--paper)' }}>
+            <div key={i} style={{ border:'1px solid var(--line)', borderRadius:14, overflow:'hidden', background:'var(--paper)' }}>
               <div style={{ aspectRatio:'1/1', background:'linear-gradient(90deg, var(--paper2) 25%, rgba(176,141,87,0.10) 50%, var(--paper2) 75%)', backgroundSize:'920px 100%', animation:'glyaShimmer 1.5s linear infinite' }} />
               <div style={{ padding:'13px 14px' }}>
                 <div style={{ height:12, width:'72%', background:'var(--paper2)', borderRadius:2, marginBottom:9 }} />

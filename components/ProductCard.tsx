@@ -27,13 +27,13 @@ export default function ProductCard({ product: p, size = 'md' }: Props) {
         <Link href={`/product/${p.id}`} style={{ display:'block', textDecoration:'none' }}>
           <div ref={imgWrap} style={{
             width:'100%', aspectRatio: size === 'sm' ? '1/1' : '4/5',
-            background:'var(--paper2)', borderRadius:3, overflow:'hidden',
+            background:'var(--paper2)', borderRadius:14, overflow:'hidden',
             display:'flex', alignItems:'center', justifyContent:'center',
             fontSize:32, color:'var(--line)', border:'1px solid var(--line)',
             position:'relative'
           }}>
             {img
-              ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw,25vw" style={{ objectFit:'contain' }} />
+              ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw,25vw" style={{ objectFit:'cover' }} />
               : <span>◈</span>
             }
           </div>

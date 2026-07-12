@@ -11,32 +11,53 @@ import HeroCarousel from '@/components/HeroCarousel';
 import CategoryStrip from '@/components/CategoryStrip';
 import SiteLoader from '@/components/SiteLoader';
 import Reveal from '@/components/Reveal';
+import type { StorefrontProduct } from '@/lib/api';
 
-const DEFAULT_CATS = [
-  { name: 'Rings',        icon: '◉', href: '/browse?cat=Rings' },
-  { name: 'Necklaces',    icon: '◈', href: '/browse?cat=Necklaces' },
-  { name: 'Bangles',      icon: '○', href: '/browse?cat=Bangles' },
-  { name: 'Earrings',     icon: '◎', href: '/browse?cat=Earrings' },
-  { name: 'Bridal',       icon: '✦', href: '/browse?col=Bridal' },
-  { name: 'New arrivals', icon: '▲', href: '/browse?tag=New' },
-];
-
-const ICONS = ['◉','◈','○','◎','✦','▲','◇','⬡','◐','◑'];
+function MetalRow({ eyebrow, title, href, linkLabel, items }: {
+  eyebrow: string; title: string; href: string; linkLabel: string; items: StorefrontProduct[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+      <Reveal>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+          <div>
+            <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>{eyebrow}</p>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:4 }}>{title}</h2>
+          </div>
+          <Link href={href} style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>{linkLabel} →</Link>
+        </div>
+      </Reveal>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
+        {items.map((p, i) => <Reveal key={p.id} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const adminProducts   = useStore(s => s.adminProducts);
   const productsLoaded  = useStore(s => s.productsLoaded);
   const adminJournal    = useStore(s => s.adminJournal);
-  const adminCategories = useStore(s => s.adminCategories);
 
   const products = adminProducts;
   const tagged   = products.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
   const trending = tagged.length > 0 ? tagged : products.slice(0, 8);
   const newArr   = products.filter(p => p.tag === 'New').slice(0, 4);
 
-  const cats = adminCategories.length > 0
-    ? adminCategories.map((name, i) => ({ name, icon: ICONS[i % ICONS.length], href: `/browse?cat=${encodeURIComponent(name)}` }))
-    : DEFAULT_CATS;
+  /* Metal rows — prefer pieces not already shown in Trending so the page
+     doesn't repeat the same products back to back. */
+  const shown = new Set(trending.map(p => p.id));
+  const pickRow = (filter: (p: StorefrontProduct) => boolean) => {
+    const all   = products.filter(filter);
+    const fresh = all.filter(p => !shown.has(p.id));
+    const row   = [...fresh, ...all.filter(p => shown.has(p.id))].slice(0, 4);
+    row.forEach(p => shown.add(p.id));
+    return row;
+  };
+  const goldRow    = pickRow(p => p.metal === 'Gold');
+  const silverRow  = pickRow(p => p.metal === 'Silver');
+  const diamondRow = pickRow(p => p.metal === 'Diamond' || p.gemValue > 0);
 
   const blogs = adminJournal.filter(p => p.status === 'Published').slice(0, 3);
 
@@ -47,8 +68,8 @@ export default function Home() {
         .home-editorial { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); overflow:hidden; border-radius:4px; }
         .home-editorial-img { background:#2F4A3F; min-height:340px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
         .home-editorial-text { padding:clamp(28px,5vw,56px) clamp(22px,4vw,48px); display:flex; flex-direction:column; justify-content:center; }
-        .trust-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); }
-        .trust-item { padding:clamp(16px,2.5vw,28px) clamp(12px,2vw,22px); text-align:center; border-right:1px solid var(--line); }
+        .trust-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid rgba(237,230,216,0.18); }
+        .trust-item { padding:clamp(16px,2.5vw,28px) clamp(12px,2vw,22px); text-align:center; border-right:1px solid rgba(237,230,216,0.18); }
         .trust-item:last-child { border-right:none; }
         .blog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px); }
         .blog-card .blog-img { transition:transform 1s cubic-bezier(.22,.61,.21,1); }
@@ -57,8 +78,6 @@ export default function Home() {
         .blog-card:hover .blog-title { color:var(--gold-d); }
         .blog-card .blog-arrow { display:inline-block; transition:transform .25s ease; }
         .blog-card:hover .blog-arrow { transform:translateX(6px); }
-        .home-cat-tile { transition:border-color .2s ease, transform .25s ease, box-shadow .25s ease; }
-        .home-cat-tile:hover { border-color:var(--gold) !important; transform:translateY(-3px); box-shadow:0 8px 20px rgba(43,37,31,.08); }
         .home-skel {
           background:linear-gradient(100deg, var(--paper2) 30%, #F3EDE1 50%, var(--paper2) 70%);
           background-size:200% 100%;
@@ -71,8 +90,8 @@ export default function Home() {
           .home-editorial-img { min-height:240px; }
           .trust-grid { grid-template-columns:repeat(2,1fr); }
           .trust-item:nth-child(2) { border-right:none; }
-          .trust-item:nth-child(3) { border-top:1px solid var(--line); }
-          .trust-item:nth-child(4) { border-top:1px solid var(--line); border-right:none; }
+          .trust-item:nth-child(3) { border-top:1px solid rgba(237,230,216,0.18); }
+          .trust-item:nth-child(4) { border-top:1px solid rgba(237,230,216,0.18); border-right:none; }
           .blog-grid { grid-template-columns:1fr; }
         }
         @media(max-width:600px){
@@ -91,48 +110,6 @@ export default function Home() {
         {/* ── SHOP BY CATEGORY (admin round tiles, hidden when none) ── */}
         <CategoryStrip />
 
-        {/* ── TRUST BAND ── */}
-        <section style={{ maxWidth:1180, margin:'clamp(32px,5vw,56px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
-          <Reveal>
-            <div className="trust-grid">
-              {[
-                { icon:'◈', label:'BIS Hallmarked', sub:'Every piece certified' },
-                { icon:'↺', label:'30-Day Returns',  sub:'Free & insured' },
-                { icon:'∞', label:'Lifetime Exchange',sub:'Buyback guaranteed' },
-                { icon:'▲', label:'Free Shipping',   sub:'Pan India, insured' },
-              ].map(t => (
-                <div key={t.icon} className="trust-item">
-                  <div style={{ fontSize:22, color:'var(--gold-d)' }}>{t.icon}</div>
-                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17, marginTop:8 }}>{t.label}</div>
-                  <div style={{ fontSize:12, color:'var(--muted)', marginTop:4 }}>{t.sub}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </section>
-
-        {/* ── CATEGORIES ── */}
-        <section style={{ maxWidth:1180, margin:'0 auto', padding:'clamp(44px,6vw,72px) clamp(16px,3vw,24px) 0' }}>
-          <Reveal>
-            <div style={{ textAlign:'center', marginBottom:36 }}>
-              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>Shop by category</p>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(26px,3.5vw,44px)', fontWeight:400, marginTop:8 }}>Find your piece</h2>
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill,minmax(clamp(100px,14vw,160px),1fr))`, gap:12 }}>
-              {cats.map(c => (
-                <Link key={c.name} href={c.href} className="home-cat-tile"
-                  style={{ textDecoration:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:'clamp(18px,3vw,26px) 12px', border:'1px solid var(--line)', background:'#fff', borderRadius:3, color:'var(--ink)' }}
-                >
-                  <span style={{ fontSize:24, color:'var(--gold-d)' }}>{c.icon}</span>
-                  <span style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:500, textAlign:'center', lineHeight:1.3 }}>{c.name}</span>
-                </Link>
-              ))}
-            </div>
-          </Reveal>
-        </section>
-
         {/* ── TRENDING ── */}
         {!productsLoaded ? (
           <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }} aria-busy="true" aria-label="Loading pieces">
@@ -145,7 +122,7 @@ export default function Home() {
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i}>
-                  <div className="home-skel" style={{ width:'100%', aspectRatio:'4/5' }} />
+                  <div className="home-skel" style={{ width:'100%', aspectRatio:'4/5', borderRadius:14 }} />
                   <div className="home-skel" style={{ width:'70%', height:14, marginTop:12, border:'none' }} />
                   <div className="home-skel" style={{ width:'45%', height:12, marginTop:8, border:'none' }} />
                 </div>
@@ -180,6 +157,15 @@ export default function Home() {
               </Link>
             </div>
           </section>
+        )}
+
+        {/* ── SHOP BY METAL — gold / silver / diamond edits ── */}
+        {productsLoaded && (
+          <>
+            <MetalRow eyebrow="The gold edit"    title="Crafted in gold"   href="/browse?metal=Gold"    linkLabel="All gold"     items={goldRow} />
+            <MetalRow eyebrow="Sterling silver"  title="Everyday silver"   href="/browse?metal=Silver"  linkLabel="All silver"   items={silverRow} />
+            <MetalRow eyebrow="Diamonds"         title="Set with diamonds" href="/browse?metal=Diamond" linkLabel="All diamonds" items={diamondRow} />
+          </>
         )}
 
         {/* ── EDITORIAL SPLIT ── */}
@@ -223,6 +209,34 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* ── ASSURANCE BAND — BIS hallmark & lifetime promise ── */}
+        <section style={{ margin:'clamp(44px,6vw,72px) auto 0', background:'#2F4A3F' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'clamp(40px,5vw,64px) clamp(16px,3vw,24px)' }}>
+            <Reveal>
+              <div style={{ textAlign:'center', marginBottom:'clamp(28px,4vw,44px)' }}>
+                <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(237,230,216,0.55)' }}>The GLYA promise</p>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(24px,3.2vw,42px)', fontWeight:400, marginTop:8, color:'#EDE6D8' }}>Certified today, valued forever</h2>
+              </div>
+            </Reveal>
+            <Reveal delay={120}>
+              <div className="trust-grid">
+                {[
+                  { icon:'◈', label:'BIS Hallmarked',        sub:'Every piece certified for purity' },
+                  { icon:'∞', label:'Lifetime Exchange',     sub:'Buyback guaranteed, always' },
+                  { icon:'↺', label:'30-Day Returns',        sub:'Free & fully insured' },
+                  { icon:'▲', label:'Free Insured Shipping', sub:'Pan India delivery' },
+                ].map(t => (
+                  <div key={t.label} className="trust-item">
+                    <div style={{ fontSize:24, color:'var(--gold)' }}>{t.icon}</div>
+                    <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:18, marginTop:10, color:'#EDE6D8' }}>{t.label}</div>
+                    <div style={{ fontSize:12, color:'rgba(237,230,216,0.6)', marginTop:5 }}>{t.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </section>
 
         {/* ── BLOG PREVIEW ── */}
         <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
