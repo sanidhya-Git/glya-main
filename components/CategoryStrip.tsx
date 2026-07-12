@@ -46,7 +46,6 @@ export default function CategoryStrip() {
     if (!marquee) return;
     const scroller = scrollRef.current;
     if (!scroller) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     let raf = 0;
     let last = performance.now();
@@ -60,9 +59,11 @@ export default function CategoryStrip() {
         if (acc >= 1) {
           const step = Math.floor(acc);
           acc -= step;
-          const half = scroller.scrollWidth / 2;
+          // Content repeats every `single` px, so wrapping there is seamless
+          // for any copy count (copies can be odd on narrow screens)
+          const single = scroller.scrollWidth / copies;
           let next = scroller.scrollLeft + step;
-          if (half > 0 && next >= half) next -= half;
+          if (single > 0 && next >= single) next -= single;
           scroller.scrollLeft = next;
         }
       }
@@ -125,8 +126,11 @@ export default function CategoryStrip() {
       <div
         ref={scrollRef}
         className="cat-strip-scroll"
-        onMouseEnter={pause}
-        onMouseLeave={() => resumeSoon(300)}
+        // Pointer events with a pointerType check instead of mouse events:
+        // after a tap, mobile browsers fire an emulated mouseenter (and never
+        // mouseleave), which used to pause the marquee permanently
+        onPointerEnter={e => { if (e.pointerType === 'mouse') pause(); }}
+        onPointerLeave={e => { if (e.pointerType === 'mouse') resumeSoon(300); }}
         onTouchStart={pause}
         onTouchEnd={() => resumeSoon()}
         onTouchCancel={() => resumeSoon()}
