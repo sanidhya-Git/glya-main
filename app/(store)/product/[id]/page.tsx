@@ -9,6 +9,20 @@ import { flyToHeader, popElement } from '@/lib/fly';
 import ProductCard from '@/components/ProductCard';
 import type { StorefrontProduct } from '@/lib/api';
 
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(url);
+}
+
+/* Admin descriptions may be raw HTML — render it, but strip anything executable first. */
+const hasHtml = (s: string) => /<\/?[a-z][\s\S]*>/i.test(s);
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'\s>]*/gi, '$1=$2#');
+}
+
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }    = use(params);
   const router    = useRouter();
@@ -60,7 +74,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const karats = p.metal === 'Platinum' ? ['PT950'] : p.metal === 'Silver' ? ['925'] : p.metal === 'Diamond' ? [p.karat] : (p.cat === 'Rings' || p.cat === 'Necklaces') ? ['18K','22K'] : ['22K','18K'];
 
   const accordions = [
-    { title: 'Description',    body: p.blurb || `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS.` },
+    { title: 'Description',    body: p.blurb || `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS.`, html: hasHtml(p.blurb) },
     { title: 'Specifications', body: `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS. ${p.reviews > 0 ? p.reviews + ' verified reviews.' : ''}` },
     { title: 'Certification',  body: `${p.gem ? 'IGI certified stone. ' : ''}BIS hallmarked metal. Ships with authenticity certificate and GST invoice.` },
     { title: 'Care & shipping',body: 'Complimentary insured shipping across India. 30-day free returns. Lifetime exchange and buyback available.' },
@@ -90,6 +104,20 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         @media(max-width:760px){ .pdp-grid { grid-template-columns:1fr; } }
         .pdp-gallery-sticky { position:sticky; top:96px; }
         @media(max-width:760px){ .pdp-gallery-sticky { position:static; } }
+        .pdp-html p { margin:0 0 10px; }
+        .pdp-html p:last-child { margin-bottom:0; }
+        .pdp-html h1, .pdp-html h2, .pdp-html h3, .pdp-html h4 { font-family:'Cormorant Garamond',serif; font-weight:500; color:var(--ink); margin:14px 0 8px; line-height:1.2; }
+        .pdp-html h1 { font-size:24px; } .pdp-html h2 { font-size:21px; } .pdp-html h3 { font-size:18px; } .pdp-html h4 { font-size:16px; }
+        .pdp-html ul, .pdp-html ol { margin:0 0 10px; padding-left:20px; }
+        .pdp-html li { margin-bottom:4px; }
+        .pdp-html a { color:var(--gold-d); }
+        .pdp-html strong, .pdp-html b { font-weight:500; color:var(--ink); }
+        .pdp-html img { max-width:100%; height:auto; border-radius:3px; }
+        .pdp-html table { width:100%; border-collapse:collapse; margin:10px 0; font-size:13.5px; }
+        .pdp-html th, .pdp-html td { border:1px solid var(--line); padding:8px 12px; text-align:left; }
+        .pdp-html th { background:var(--paper2); font-weight:500; }
+        .pdp-html hr { border:none; border-top:1px solid var(--line); margin:14px 0; }
+        .pdp-html blockquote { margin:10px 0; padding:8px 16px; border-left:2px solid var(--gold); background:var(--paper2); font-style:italic; }
       `}</style>
 
       {/* BREADCRUMB */}
@@ -108,7 +136,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <div className="pdp-gallery-sticky">
           <div ref={galleryRef} style={{ position:'relative', width:'100%', aspectRatio:'1/1', background:'var(--paper2)', borderRadius:4, overflow:'hidden', border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, color:'var(--line)' }}>
             {activeImg
-              ? <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'contain' }} />
+              ? isVideoUrl(activeImg)
+                ? <video src={activeImg} controls playsInline style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+                : <Image src={activeImg} alt={p.name} fill sizes="(max-width:760px) 100vw,50vw" style={{ objectFit:'contain' }} />
               : <span>◈</span>
             }
           </div>
@@ -116,8 +146,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginTop:12 }}>
               {images.slice(0,4).map((img, i) => (
                 <div key={i} onClick={() => setGalleryIdx(i)}
-                  style={{ cursor:'pointer', border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`, borderRadius:3, overflow:'hidden', aspectRatio:'1/1', position:'relative', background:'var(--paper2)', transition:'border-color .18s' }}>
-                  <Image src={img} alt={p.name} fill sizes="100px" style={{ objectFit:'contain' }} />
+                  style={{ cursor:'pointer', border:`2px solid ${galleryIdx===i?'var(--gold)':'var(--line)'}`, borderRadius:3, overflow:'hidden', aspectRatio:'1/1', position:'relative', background:'var(--paper2)', transition:'border-color .18s', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {isVideoUrl(img)
+                    ? <>
+                        <video src={img} muted style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                        <span style={{ position:'absolute', fontSize:20, color:'#fff', background:'rgba(0,0,0,0.4)', borderRadius:'50%', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>▶</span>
+                      </>
+                    : <Image src={img} alt={p.name} fill sizes="100px" style={{ objectFit:'contain' }} />
+                  }
                 </div>
               ))}
             </div>
@@ -249,7 +285,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   {a.title} <span style={{ fontFamily:'Jost', fontSize:18, color:'var(--muted)' }}>{openAcc===i?'−':'+'}</span>
                 </div>
                 {openAcc===i && (
-                  <div style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}>{a.body}</div>
+                  a.html
+                    ? <div className="pdp-html" style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.body) }} />
+                    : <div style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}>{a.body}</div>
                 )}
               </div>
             ))}

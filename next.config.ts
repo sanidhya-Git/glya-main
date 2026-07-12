@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "*.cloudinary.com" },
+      { protocol: "https", hostname: "*.vercel-storage.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "*.s3.amazonaws.com" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
+      { protocol: "https", hostname: "glya-admin.vercel.app" },
+      { protocol: "http",  hostname: "localhost" },
     ],
   },
 

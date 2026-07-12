@@ -33,7 +33,7 @@ export default function ProductCard({ product: p, size = 'md' }: Props) {
             position:'relative'
           }}>
             {img
-              ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw,25vw" style={{ objectFit:'cover' }} />
+              ? <Image src={img} alt={p.name} fill sizes="(max-width:600px) 50vw,25vw" style={{ objectFit:'contain' }} />
               : <span>◈</span>
             }
           </div>

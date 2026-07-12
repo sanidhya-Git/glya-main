@@ -2,13 +2,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { useStore, useMetalRates, Order, OrderLine } from '@/lib/store';
 import { priceOf, inr, karatLabel } from '@/lib/catalog';
 import { createAdminOrder, fetchUserProfile, postProfileAction, type SavedAddress } from '@/lib/api';
 import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
+import StripeCardForm from '@/components/StripeCardForm';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
 
 const shipOptions = [
-  { label: 'Insured standard',  desc: '3–5 business days', cost: 0 },
+  { label: 'Insured standard', desc: '3–5 business days', cost: 0 },
 ];
 const payMethods = [
   { icon: '💳', label: 'Credit / Debit card', desc: 'Visa, Mastercard, Amex' },
@@ -26,15 +31,53 @@ const selectStyle: React.CSSProperties = {
   appearance: 'none', cursor: 'pointer',
 };
 
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayInstance {
+  open(): void;
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (opts: unknown) => RazorpayInstance;
+  }
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise(resolve => {
+    if (typeof window !== 'undefined' && window.Razorpay) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
+/* ─── Main export: wraps content in Stripe Elements provider ─── */
 export default function CheckoutPage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutContent />
+    </Elements>
+  );
+}
+
+/* ─── Inner component: has access to useStripe / useElements ─── */
+function CheckoutContent() {
+  const stripe   = useStripe();
+  const elements = useElements();
+
   const { cart, giftWrap, insurance, couponApplied, clearCoupon, clearCart, setLastOrder, addOrder, decrementStock } = useStore();
-  const rates         = useMetalRates();
-  const adminProducts = useStore(s => s.adminProducts);
+  const rates          = useMetalRates();
+  const adminProducts  = useStore(s => s.adminProducts);
   const user           = useStore(s => s.user);
   const setUser        = useStore(s => s.setUser);
   const productsLoaded = useStore(s => s.productsLoaded);
 
-  /* ── Checkout state ── */
   const [shipIdx,   setShipIdx]   = useState(0);
   const [payMethod, setPayMethod] = useState(0);
   const [placed,    setPlaced]    = useState(false);
@@ -49,7 +92,6 @@ export default function CheckoutPage() {
     country: 'IN', state: '', city: '', pin: '',
   });
 
-  /* ── Saved addresses (returning customers) ── */
   const [savedAddrs, setSavedAddrs] = useState<SavedAddress[]>([]);
   const [selAddrId,  setSelAddrId]  = useState<string>('new');
 
@@ -63,8 +105,6 @@ export default function CheckoutPage() {
     }));
   };
 
-  /* Pre-fill email + profile details when user is already logged in,
-     and load the address book so nothing has to be retyped. */
   useEffect(() => {
     if (!user?.email) { setSavedAddrs([]); setSelAddrId('new'); return; }
     const email = user.email;
@@ -102,12 +142,10 @@ export default function CheckoutPage() {
     }
   }
 
-  const countryInfo = getCountry(form.country);
+  const countryInfo   = getCountry(form.country);
   const pincodeValid  = form.pin.length > 0 && validatePincode(form.pin, form.country);
   const pincodeError  = form.pin.length > 0 && !pincodeValid;
 
-  /* ── Cart totals ── */
-  /* Items whose product no longer exists in the admin catalog are excluded from totals. */
   const rawItems = cart.map(it => {
     const p = adminProducts.find(x => x.id === it.id);
     if (!p) return null;
@@ -132,7 +170,6 @@ export default function CheckoutPage() {
   const insCost  = insurance   ? 499 : 0;
   const total    = subtotal - discount + shipCost + wrapCost + insCost;
 
-  /* ── Address step validation ── */
   function addressComplete() {
     if (!form.first || !form.last || !form.email || !form.mobile) return false;
     if (!form.addr1 || !form.city || !form.country) return false;
@@ -141,12 +178,8 @@ export default function CheckoutPage() {
     return true;
   }
 
-  /* ── Place order ── */
-  async function placeOrder() {
-    if (placing) return;
-    setPlacing(true);
-    setOrderErr('');
-    const no = 'GLY' + Math.floor(700000 + Math.random() * 99999);
+  /* ── After payment succeeds, finalise the order in admin + local store ── */
+  async function finaliseOrder(no: string, payRef: string) {
     const lines: OrderLine[] = items.map(it => ({
       productId: it.p.id,
       name:      it.p.name,
@@ -183,8 +216,9 @@ export default function CheckoutPage() {
       payment:        payMethods[payMethod].label,
       status:         'Confirmed',
     };
-    const addrStr = [form.addr1, form.addr2, form.city, form.state, countryInfo?.name, form.pin].filter(Boolean).join(', ');
+    const addrStr  = [form.addr1, form.addr2, form.city, form.state, countryInfo?.name, form.pin].filter(Boolean).join(', ');
     const hasPromo = Boolean(couponApplied && !couponApplied.invalid && discount > 0);
+
     const result = await createAdminOrder({
       no,
       customer:    `${form.first} ${form.last}`.trim() || 'Guest',
@@ -192,12 +226,11 @@ export default function CheckoutPage() {
       items:       lines.length,
       total:       inr(total),
       totalNum:    total,
-      payment:     payMethods[payMethod].label,
+      payment:     `${payMethods[payMethod].label} (ref: ${payRef})`,
       status:      'Confirmed',
       date:        new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
       isoDate:     new Date().toISOString(),
       address:     addrStr,
-      /* Structured copy — saved into the customer's address book by the admin */
       addressObj: {
         label:       'Home',
         firstName:   form.first,
@@ -211,7 +244,7 @@ export default function CheckoutPage() {
         countryCode: form.country,
         pincode:     form.pin,
       },
-      lines:       items.map(it => ({
+      lines: items.map(it => ({
         name:     it.p.name,
         meta:     `${it.metalLabel}${it.size ? ' · Size ' + it.size : ''}`,
         qty:      it.qty,
@@ -227,12 +260,9 @@ export default function CheckoutPage() {
       } : {}),
     });
 
-    /* Promo went invalid between apply and checkout — server rejected the order. */
     if (result.promoError) {
       clearCoupon();
-      setOrderErr(`${result.promoError} The code has been removed — please review your total and try again.`);
-      setPlacing(false);
-      return;
+      throw new Error(`${result.promoError} The code has been removed — please review your total and try again.`);
     }
 
     addOrder(order);
@@ -242,12 +272,9 @@ export default function CheckoutPage() {
     setLastOrder(no);
     clearCart();
     setPlaced(true);
-    setPlacing(false);
 
-    /* Auto-create the account from the order details — no OTP or verification. */
     if (!user) setUser({ email: form.email });
 
-    /* Fire-and-forget: full invoice to the email the customer provided. */
     const eta = new Date();
     eta.setDate(eta.getDate() + (shipIdx === 0 ? 5 : shipIdx === 1 ? 2 : 1));
     const viewOrderUrl = `${window.location.origin}/track?order=${encodeURIComponent(no)}`;
@@ -279,6 +306,103 @@ export default function CheckoutPage() {
         viewOrderUrl,
       }),
     }).catch(() => {});
+  }
+
+  /* ── Payment handlers ── */
+
+  async function handleStripePayment(no: string): Promise<string> {
+    if (!stripe || !elements) throw new Error('Stripe not loaded');
+    const cardEl = elements.getElement(CardElement);
+    if (!cardEl) throw new Error('Card element not ready');
+
+    const res = await fetch('/api/payment/stripe/create-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: total, metadata: { orderNo: no } }),
+    });
+    const { clientSecret, error: intentErr } = await res.json();
+    if (intentErr) throw new Error(intentErr);
+
+    const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardEl },
+    });
+    if (stripeErr) throw new Error(stripeErr.message);
+    if (paymentIntent?.status !== 'succeeded') throw new Error('Card payment did not complete');
+    return paymentIntent.id;
+  }
+
+  async function handleRazorpayPayment(no: string): Promise<string> {
+    await loadRazorpayScript();
+
+    const res = await fetch('/api/payment/razorpay/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: total, orderNo: no }),
+    });
+    const { orderId, amount: rzpAmt, currency, keyId, error: rzpErr } = await res.json();
+    if (rzpErr) throw new Error(rzpErr);
+
+    return new Promise<string>((resolve, reject) => {
+      const options = {
+        key:         keyId,
+        amount:      rzpAmt,
+        currency,
+        name:        'GLYA',
+        description: `Order ${no}`,
+        order_id:    orderId,
+        prefill: {
+          name:    `${form.first} ${form.last}`.trim(),
+          email:   form.email,
+          contact: form.mobile,
+        },
+        method: {
+          upi:        payMethod === 1,
+          netbanking: payMethod === 2,
+          card:       false,
+          wallet:     false,
+          emi:        false,
+        },
+        handler: async (response: RazorpayResponse) => {
+          const vRes = await fetch('/api/payment/razorpay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(response),
+          });
+          const vData = await vRes.json();
+          if (vData.ok) resolve(vData.paymentId as string);
+          else reject(new Error(vData.error || 'Payment verification failed'));
+        },
+        modal:  { ondismiss: () => reject(new Error('dismissed')) },
+        theme:  { color: '#B08D57' },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    });
+  }
+
+  /* ── Pay now (entry point) ── */
+  async function handlePayNow() {
+    if (placing) return;
+    setPlacing(true);
+    setOrderErr('');
+
+    const no = 'GLY' + Math.floor(700000 + Math.random() * 99999);
+
+    try {
+      let payRef: string;
+
+      if (payMethod === 0) {
+        payRef = await handleStripePayment(no);
+      } else {
+        payRef = await handleRazorpayPayment(no);
+      }
+
+      await finaliseOrder(no, payRef);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Payment failed. Please try again.';
+      if (msg !== 'dismissed') setOrderErr(msg);
+      setPlacing(false);
+    }
   }
 
   /* ════════════════════════════════
@@ -314,7 +438,7 @@ export default function CheckoutPage() {
   }
 
   /* ════════════════════════════════
-     LOADING — products not yet fetched
+     LOADING
   ════════════════════════════════ */
   if (!productsLoaded && cart.length > 0) {
     return (
@@ -347,7 +471,6 @@ export default function CheckoutPage() {
         .co-select-wrap::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--muted); font-size:12px; }
       `}</style>
 
-      {/* Logged-in indicator (guests check out without an account) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
         <Link href="/cart" style={{ fontSize: 12.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', textDecoration: 'none' }}>← Back to bag</Link>
         {user ? (
@@ -362,70 +485,61 @@ export default function CheckoutPage() {
       </div>
 
       <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 500, fontSize: 'clamp(28px,4vw,48px)', marginBottom: 8 }}>Checkout</h1>
-
       <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '4px 0 26px' }}>Fill in your details below and pay in one step — no account needed.</p>
 
       <div className="co-layout">
         <div>
           {/* ── Address ── */}
           <div style={{ display: 'grid', gap: 13 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery address</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery address</div>
 
-              {/* Saved addresses — returning customers pick one instead of retyping */}
-              {savedAddrs.length > 0 && (
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {savedAddrs.map(a => (
-                    <div key={a._id} onClick={() => { setSelAddrId(a._id!); applySaved(a); }} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'flex-start', border: `1px solid ${selAddrId === a._id ? 'var(--gold)' : 'var(--line)'}`, background: selAddrId === a._id ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '14px 16px' }}>
-                      <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                        {selAddrId === a._id && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14.5 }}>
-                          {a.firstName} {a.lastName}
-                          {a.def && <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-d)', border: '1px solid var(--gold)', borderRadius: 2, padding: '2px 7px', marginLeft: 8, verticalAlign: 'middle' }}>Default</span>}
-                        </div>
-                        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3, lineHeight: 1.6 }}>
-                          {a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city}{a.state ? `, ${a.state}` : ''}{a.pincode ? ` – ${a.pincode}` : ''}<br />{a.mobile}
-                        </div>
-                      </div>
-                      <button onClick={e => { e.stopPropagation(); deleteSaved(a); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#B4553B', textDecoration: 'underline', padding: 0, flexShrink: 0 }}>Delete</button>
-                    </div>
-                  ))}
-                  <div onClick={() => setSelAddrId('new')} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center', border: `1px solid ${selAddrId === 'new' ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '14px 16px' }}>
-                    <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {selAddrId === 'new' && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+            {savedAddrs.length > 0 && (
+              <div style={{ display: 'grid', gap: 10 }}>
+                {savedAddrs.map(a => (
+                  <div key={a._id} onClick={() => { setSelAddrId(a._id!); applySaved(a); }} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'flex-start', border: `1px solid ${selAddrId === a._id ? 'var(--gold)' : 'var(--line)'}`, background: selAddrId === a._id ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '14px 16px' }}>
+                    <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                      {selAddrId === a._id && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
                     </span>
-                    <div style={{ fontSize: 14.5 }}>Deliver to a new address</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14.5 }}>
+                        {a.firstName} {a.lastName}
+                        {a.def && <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-d)', border: '1px solid var(--gold)', borderRadius: 2, padding: '2px 7px', marginLeft: 8, verticalAlign: 'middle' }}>Default</span>}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3, lineHeight: 1.6 }}>
+                        {a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city}{a.state ? `, ${a.state}` : ''}{a.pincode ? ` – ${a.pincode}` : ''}<br />{a.mobile}
+                      </div>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); deleteSaved(a); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#B4553B', textDecoration: 'underline', padding: 0, flexShrink: 0 }}>Delete</button>
                   </div>
+                ))}
+                <div onClick={() => setSelAddrId('new')} style={{ cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center', border: `1px solid ${selAddrId === 'new' ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '14px 16px' }}>
+                  <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {selAddrId === 'new' && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+                  </span>
+                  <div style={{ fontSize: 14.5 }}>Deliver to a new address</div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {(savedAddrs.length === 0 || selAddrId === 'new') && (<>
+            {(savedAddrs.length === 0 || selAddrId === 'new') && (<>
               <div className="co-name-grid">
                 <input placeholder="First name" value={form.first} onChange={e => setForm(f => ({ ...f, first: e.target.value }))} style={inputStyle} />
                 <input placeholder="Last name"  value={form.last}  onChange={e => setForm(f => ({ ...f, last:  e.target.value }))} style={inputStyle} />
               </div>
-
               <input type="email" placeholder="Email address" value={form.email}  onChange={e => setForm(f => ({ ...f, email:  e.target.value }))} style={inputStyle} />
               <input placeholder="Mobile number"             value={form.mobile} onChange={e => setForm(f => ({ ...f, mobile: e.target.value }))} style={inputStyle} />
               <input placeholder="Flat, house no., building" value={form.addr1}  onChange={e => setForm(f => ({ ...f, addr1:  e.target.value }))} style={inputStyle} />
               <input placeholder="Area, street, locality"   value={form.addr2}  onChange={e => setForm(f => ({ ...f, addr2:  e.target.value }))} style={inputStyle} />
 
-              {/* Country */}
               <div>
                 <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>Country</div>
                 <div className="co-select-wrap">
-                  <select
-                    value={form.country}
-                    onChange={e => setForm(f => ({ ...f, country: e.target.value, state: '', pin: '' }))}
-                    style={selectStyle}
-                  >
+                  <select value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value, state: '', pin: '' }))} style={selectStyle}>
                     {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* State / Region */}
               <div className="co-geo-grid">
                 <div>
                   <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>
@@ -433,11 +547,7 @@ export default function CheckoutPage() {
                   </div>
                   {countryInfo && countryInfo.states.length > 0 ? (
                     <div className="co-select-wrap">
-                      <select
-                        value={form.state}
-                        onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
-                        style={selectStyle}
-                      >
+                      <select value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={selectStyle}>
                         <option value="">Select state</option>
                         {countryInfo.states.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
@@ -446,14 +556,12 @@ export default function CheckoutPage() {
                     <input placeholder="State / Region" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={inputStyle} />
                   )}
                 </div>
-
                 <div>
                   <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>City</div>
                   <input placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
 
-              {/* Pincode */}
               <div>
                 <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>
                   {countryInfo?.pincodeLabel ?? 'Postal Code'}
@@ -466,8 +574,8 @@ export default function CheckoutPage() {
                     maxLength={countryInfo?.pincodeMaxLen ?? 12}
                     style={{ ...inputStyle, borderColor: pincodeError ? '#C0392B' : pincodeValid ? 'var(--em)' : 'var(--line)' }}
                   />
-                  {pincodeValid  && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--em)', fontSize: 15 }}>✓</span>}
-                  {pincodeError  && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#C0392B', fontSize: 15 }}>✗</span>}
+                  {pincodeValid && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--em)', fontSize: 15 }}>✓</span>}
+                  {pincodeError && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#C0392B', fontSize: 15 }}>✗</span>}
                 </div>
                 {pincodeError && (
                   <div style={{ fontSize: 12.5, color: '#C0392B', marginTop: 5 }}>
@@ -475,50 +583,63 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-              </>)}
+            </>)}
           </div>
 
           {/* ── Delivery ── */}
           <div style={{ display: 'grid', gap: 14, marginTop: 36 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery method</div>
-              {shipOptions.map((o, i) => (
-                <div key={i} onClick={() => setShipIdx(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${shipIdx === i ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '18px 20px' }}>
-                  <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {shipIdx === i && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
-                  </span>
-                  <div style={{ flex: 1 }}><div style={{ fontSize: 15 }}>{o.label}</div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{o.desc}</div></div>
-                  <div style={{ fontSize: 14, color: 'var(--em)' }}>{o.cost === 0 ? 'Free' : inr(o.cost)}</div>
-                </div>
-              ))}
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Delivery method</div>
+            {shipOptions.map((o, i) => (
+              <div key={i} onClick={() => setShipIdx(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${shipIdx === i ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 3, padding: '18px 20px' }}>
+                <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {shipIdx === i && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+                </span>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 15 }}>{o.label}</div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{o.desc}</div></div>
+                <div style={{ fontSize: 14, color: 'var(--em)' }}>{o.cost === 0 ? 'Free' : inr(o.cost)}</div>
+              </div>
+            ))}
           </div>
 
           {/* ── Payment ── */}
           <div style={{ display: 'grid', gap: 12, marginTop: 36 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Payment method</div>
-              {payMethods.map((p, i) => (
-                <div key={i} onClick={() => setPayMethod(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${payMethod === i ? 'var(--gold)' : 'var(--line)'}`, background: payMethod === i ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '16px 18px' }}>
-                  <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {payMethod === i && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
-                  </span>
-                  <span style={{ fontSize: 20 }}>{p.icon}</span>
-                  <div style={{ flex: 1 }}><div style={{ fontSize: 15 }}>{p.label}</div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{p.desc}</div></div>
-                </div>
-              ))}
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>🔒 Payments are encrypted and verified.</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26 }}>Payment method</div>
+            {payMethods.map((p, i) => (
+              <div key={i} onClick={() => setPayMethod(i)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${payMethod === i ? 'var(--gold)' : 'var(--line)'}`, background: payMethod === i ? 'rgba(176,141,87,0.04)' : 'transparent', borderRadius: 3, padding: '16px 18px' }}>
+                <span style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {payMethod === i && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--ink)' }}></span>}
+                </span>
+                <span style={{ fontSize: 20 }}>{p.icon}</span>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 15 }}>{p.label}</div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{p.desc}</div></div>
+              </div>
+            ))}
+
+            {/* Stripe card fields — shown only when card method is active */}
+            {payMethod === 0 && (
+              <div style={{ padding: '16px 18px', border: '1px solid var(--line)', borderTop: 'none', borderRadius: '0 0 3px 3px', marginTop: -12, background: 'rgba(176,141,87,0.02)' }}>
+                <div style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Card details</div>
+                <StripeCardForm />
+              </div>
+            )}
+
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>
+              🔒 {payMethod === 0 ? 'Secured by Stripe — PCI-DSS compliant.' : payMethod === 1 ? 'UPI payment via Razorpay — works with GPay, PhonePe, Paytm and all BHIM UPI apps.' : 'Net banking via Razorpay — all major Indian banks.'}
+            </div>
           </div>
 
-          {/* ── Pay now ── */}
+          {/* ── Error ── */}
           {orderErr && (
             <div style={{ marginTop: 24, padding: '13px 16px', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: 3, fontSize: 13.5, color: '#C0392B', lineHeight: 1.6 }}>
               {orderErr}
             </div>
           )}
+
+          {/* ── Pay now ── */}
           <button
-            onClick={placeOrder}
+            onClick={handlePayNow}
             disabled={!addressComplete() || placing}
             style={{ cursor: 'pointer', width: '100%', marginTop: orderErr ? 14 : 30, background: 'var(--ink)', color: '#F7F2E8', border: 'none', padding: 17, fontSize: 13.5, letterSpacing: '0.14em', textTransform: 'uppercase', borderRadius: 2, opacity: (!addressComplete() || placing) ? 0.5 : 1 }}
             onMouseEnter={e => { if (addressComplete() && !placing) (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-d)'; }}
-            onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ink)')}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--ink)'; }}
           >
             {placing ? 'Processing…' : `Pay now · ${inr(total)}`}
           </button>
@@ -553,8 +674,8 @@ export default function CheckoutPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Subtotal ({items.reduce((a, b) => a + b.qty, 0)})</span><span>{inr(subtotal)}</span></div>
             {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--em)' }}><span>Discount ({couponApplied?.code})</span><span>− {inr(discount)}</span></div>}
             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Delivery</span><span style={{ color: 'var(--em)' }}>{shipCost === 0 ? 'Free' : inr(shipCost)}</span></div>
-            {giftWrap    && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Gift wrapping</span><span>{inr(299)}</span></div>}
-            {insurance   && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Shipment insurance</span><span>{inr(499)}</span></div>}
+            {giftWrap  && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Gift wrapping</span><span>{inr(299)}</span></div>}
+            {insurance && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink2)' }}><span>Shipment insurance</span><span>{inr(499)}</span></div>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderTop: '1px solid var(--line)', marginTop: 16, paddingTop: 16 }}>
             <span style={{ fontSize: 15 }}>Total</span>
