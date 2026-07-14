@@ -657,7 +657,7 @@ function CheckoutContent() {
             )}
 
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>
-              🔒 {payMethod === 0 ? 'Secured by Stripe — PCI-DSS compliant.' : payMethod === 1 ? 'UPI payment via Razorpay — works with GPay, PhonePe, Paytm and all BHIM UPI apps.' : 'Net banking via Razorpay — all major Indian banks.'}
+              🔒 {payMethod === 0 ? 'PCI-DSS compliant — your card details are encrypted.' : payMethod === 1 ? 'UPI payment — works with GPay, PhonePe, Paytm and all BHIM UPI apps.' : 'Net banking — all major Indian banks supported.'}
             </div>
           </div>
 
