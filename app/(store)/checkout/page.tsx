@@ -315,10 +315,17 @@ function CheckoutContent() {
     const cardEl = elements.getElement(CardElement);
     if (!cardEl) throw new Error('Card element not ready');
 
+    // Amount is computed server-side — never trust client total for payment
     const res = await fetch('/api/payment/stripe/create-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: total, metadata: { orderNo: no } }),
+      body: JSON.stringify({
+        cartItems:  cart.map(c => ({ id: c.id, karat: c.karat, qty: c.qty })),
+        couponCode: couponApplied?.code || '',
+        giftWrap,
+        insurance,
+        orderNo:    no,
+      }),
     });
     const { clientSecret, error: intentErr } = await res.json();
     if (intentErr) throw new Error(intentErr);
@@ -328,16 +335,33 @@ function CheckoutContent() {
     });
     if (stripeErr) throw new Error(stripeErr.message);
     if (paymentIntent?.status !== 'succeeded') throw new Error('Card payment did not complete');
+
+    // Server-side verification — confirms payment actually succeeded with Stripe
+    const verRes = await fetch('/api/payment/stripe/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+    });
+    const vData = await verRes.json();
+    if (!vData.ok) throw new Error(vData.error || 'Payment verification failed');
+
     return paymentIntent.id;
   }
 
   async function handleRazorpayPayment(no: string): Promise<string> {
     await loadRazorpayScript();
 
+    // Amount is computed server-side — never trust client total for payment
     const res = await fetch('/api/payment/razorpay/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: total, orderNo: no }),
+      body: JSON.stringify({
+        cartItems:  cart.map(c => ({ id: c.id, karat: c.karat, qty: c.qty })),
+        couponCode: couponApplied?.code || '',
+        giftWrap,
+        insurance,
+        orderNo:    no,
+      }),
     });
     const { orderId, amount: rzpAmt, currency, keyId, error: rzpErr } = await res.json();
     if (rzpErr) throw new Error(rzpErr);
@@ -383,6 +407,17 @@ function CheckoutContent() {
   /* ── Pay now (entry point) ── */
   async function handlePayNow() {
     if (placing) return;
+
+    // Guard: empty cart or below minimum amount
+    if (items.length === 0) {
+      setOrderErr('Your cart is empty.');
+      return;
+    }
+    if (total < 100) {
+      setOrderErr('Minimum order amount is ₹100.');
+      return;
+    }
+
     setPlacing(true);
     setOrderErr('');
 
