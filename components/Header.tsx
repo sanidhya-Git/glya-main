@@ -750,7 +750,7 @@ export default function Header() {
         <div className="gh-mob">
           <div className="gh-mob-hdr">
             <Link href="/" className="gh-logo" style={{ margin: 0 }} onClick={() => setMenuOpen(false)}>GLYA</Link>
-            <button className="gh-ib" onClick={() => setMenuOpen(false)}><IconClose /></button>
+            <button className="gh-ib" onClick={() => setMenuOpen(false)} aria-label="Close menu"><IconClose /></button>
           </div>
 
           <div style={{ flex: 1 }}>

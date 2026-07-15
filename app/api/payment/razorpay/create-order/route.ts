@@ -51,7 +51,6 @@ export async function POST(req: Request) {
       orderId:  order.id,
       amount:   order.amount,
       currency: order.currency,
-      keyId:    process.env.RAZORPAY_KEY_ID,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Payment initialisation failed';

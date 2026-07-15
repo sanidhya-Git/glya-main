@@ -153,6 +153,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ fontFamily: "var(--font-jost), system-ui, sans-serif", background: "var(--paper)", color: "var(--ink)" }}>
         {ADMIN_ORIGIN && <link rel="preconnect" href={ADMIN_ORIGIN} crossOrigin="anonymous" />}
+        <link rel="dns-prefetch" href="//checkout.razorpay.com" />
+        <link rel="dns-prefetch" href="//api.razorpay.com" />
         {children}
       </body>
     </html>

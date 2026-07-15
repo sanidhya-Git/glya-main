@@ -363,12 +363,12 @@ function CheckoutContent() {
         orderNo:    no,
       }),
     });
-    const { orderId, amount: rzpAmt, currency, keyId, error: rzpErr } = await res.json();
+    const { orderId, amount: rzpAmt, currency, error: rzpErr } = await res.json();
     if (rzpErr) throw new Error(rzpErr);
 
     return new Promise<string>((resolve, reject) => {
       const options = {
-        key:         keyId,
+        key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '',
         amount:      rzpAmt,
         currency,
         name:        'GLYA',
@@ -396,7 +396,7 @@ function CheckoutContent() {
           if (vData.ok) resolve(vData.paymentId as string);
           else reject(new Error(vData.error || 'Payment verification failed'));
         },
-        modal:  { ondismiss: () => reject(new Error('dismissed')) },
+        modal:  { ondismiss: () => reject(new Error('dismissed')), escape: false, backdropclose: false },
         theme:  { color: '#B08D57' },
       };
       const rzp = new window.Razorpay(options);
@@ -558,18 +558,18 @@ function CheckoutContent() {
 
             {(savedAddrs.length === 0 || selAddrId === 'new') && (<>
               <div className="co-name-grid">
-                <input placeholder="First name" value={form.first} onChange={e => setForm(f => ({ ...f, first: e.target.value }))} style={inputStyle} />
-                <input placeholder="Last name"  value={form.last}  onChange={e => setForm(f => ({ ...f, last:  e.target.value }))} style={inputStyle} />
+                <input aria-label="First name" placeholder="First name" value={form.first} onChange={e => setForm(f => ({ ...f, first: e.target.value }))} style={inputStyle} />
+                <input aria-label="Last name"  placeholder="Last name"  value={form.last}  onChange={e => setForm(f => ({ ...f, last:  e.target.value }))} style={inputStyle} />
               </div>
-              <input type="email" placeholder="Email address" value={form.email}  onChange={e => setForm(f => ({ ...f, email:  e.target.value }))} style={inputStyle} />
-              <input placeholder="Mobile number"             value={form.mobile} onChange={e => setForm(f => ({ ...f, mobile: e.target.value }))} style={inputStyle} />
-              <input placeholder="Flat, house no., building" value={form.addr1}  onChange={e => setForm(f => ({ ...f, addr1:  e.target.value }))} style={inputStyle} />
-              <input placeholder="Area, street, locality"   value={form.addr2}  onChange={e => setForm(f => ({ ...f, addr2:  e.target.value }))} style={inputStyle} />
+              <input aria-label="Email address" type="email" placeholder="Email address" value={form.email}  onChange={e => setForm(f => ({ ...f, email:  e.target.value }))} style={inputStyle} />
+              <input aria-label="Mobile number" placeholder="Mobile number"             value={form.mobile} onChange={e => setForm(f => ({ ...f, mobile: e.target.value }))} style={inputStyle} />
+              <input aria-label="Address line 1" placeholder="Flat, house no., building" value={form.addr1}  onChange={e => setForm(f => ({ ...f, addr1:  e.target.value }))} style={inputStyle} />
+              <input aria-label="Address line 2" placeholder="Area, street, locality"   value={form.addr2}  onChange={e => setForm(f => ({ ...f, addr2:  e.target.value }))} style={inputStyle} />
 
               <div>
                 <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>Country</div>
                 <div className="co-select-wrap">
-                  <select value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value, state: '', pin: '' }))} style={selectStyle}>
+                  <select aria-label="Country" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value, state: '', pin: '' }))} style={selectStyle}>
                     {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                   </select>
                 </div>
@@ -582,18 +582,18 @@ function CheckoutContent() {
                   </div>
                   {countryInfo && countryInfo.states.length > 0 ? (
                     <div className="co-select-wrap">
-                      <select value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={selectStyle}>
+                      <select aria-label="State / Province" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={selectStyle}>
                         <option value="">Select state</option>
                         {countryInfo.states.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
                   ) : (
-                    <input placeholder="State / Region" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={inputStyle} />
+                    <input aria-label="State / Region" placeholder="State / Region" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={inputStyle} />
                   )}
                 </div>
                 <div>
                   <div style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>City</div>
-                  <input placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={inputStyle} />
+                  <input aria-label="City" placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
 
@@ -603,6 +603,7 @@ function CheckoutContent() {
                 </div>
                 <div style={{ position: 'relative' }}>
                   <input
+                    aria-label={countryInfo?.pincodeLabel ?? 'Postal Code'}
                     placeholder={countryInfo?.pincodePlaceholder ?? 'Postal code'}
                     value={form.pin}
                     onChange={e => setForm(f => ({ ...f, pin: e.target.value }))}
