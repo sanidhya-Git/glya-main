@@ -10,7 +10,7 @@ import { createAdminOrder, fetchUserProfile, postProfileAction, type SavedAddres
 import { COUNTRIES, getCountry, validatePincode } from '@/lib/geo';
 import StripeCardForm from '@/components/StripeCardForm';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_PAYMENT_KEY ?? '');
 
 const shipOptions = [
   { label: 'Insured standard', desc: '3–5 business days', cost: 0 },
@@ -316,7 +316,7 @@ function CheckoutContent() {
     if (!cardEl) throw new Error('Card element not ready');
 
     // Amount is computed server-side — never trust client total for payment
-    const res = await fetch('/api/payment/stripe/create-intent', {
+    const res = await fetch('/api/payment/card/charge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -337,7 +337,7 @@ function CheckoutContent() {
     if (paymentIntent?.status !== 'succeeded') throw new Error('Card payment did not complete');
 
     // Server-side verification — confirms payment actually succeeded with Stripe
-    const verRes = await fetch('/api/payment/stripe/verify', {
+    const verRes = await fetch('/api/payment/card/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
