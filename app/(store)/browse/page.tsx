@@ -51,6 +51,7 @@ function BrowseContent() {
   const rates           = useMetalRates();
   const adminProducts   = useStore(s => s.adminProducts);
   const adminCategories = useStore(s => s.adminCategories);
+  const categoryTree    = useStore(s => s.categoryTree);
   const productsLoaded  = useStore(s => s.productsLoaded);
   const products        = adminProducts;
 
@@ -122,16 +123,40 @@ function BrowseContent() {
   /* ── FILTER LOGIC ── */
   let list = products.slice();
 
-  /* collection */
-  if (activeCol) list = list.filter(p => p.col === activeCol);
+  /* collection — exact col match for theme-based collections ("Everyday", "Festive"),
+     but also check catPath for legacy nav links that used ?col=BK+Gold style sub-categories */
+  if (activeCol) list = list.filter(p =>
+    p.col === activeCol ||
+    (p.catPath?.some(c => c.toLowerCase() === activeCol.toLowerCase()))
+  );
 
-  /* category hierarchy — a name at any level matches the product's catPath
-     (main / sub / product-category); legacy products fall back to p.cat */
-  const inCatPath = (p: (typeof products)[number], name: string) =>
-    (p.catPath && p.catPath.includes(name)) || p.cat === name;
-  if (activeCat)  list = list.filter(p => inCatPath(p, activeCat) || p.name.toLowerCase().includes(activeCat.toLowerCase()));
-  if (activeSub)  list = list.filter(p => inCatPath(p, activeSub));
-  if (activeType) list = list.filter(p => inCatPath(p, activeType));
+  /* category hierarchy — checks catPath, cat (deepest), and col (legacy products
+     stored collection name as their sub-category equivalent) */
+  const inCatPath = (p: (typeof products)[number], name: string) => {
+    const lower = name.toLowerCase();
+    return (p.catPath?.some(c => c.toLowerCase() === lower))
+      || p.cat.toLowerCase() === lower
+      || p.col.toLowerCase() === lower;
+  };
+
+  /* Cascaded filter: use only the most-specific param so that the broad L1
+     cat filter doesn't knock out old products that lack L1 in their catPath. */
+  if (activeType) {
+    list = list.filter(p => inCatPath(p, activeType));
+    if (activeSub) list = list.filter(p => inCatPath(p, activeSub));
+  } else if (activeSub) {
+    list = list.filter(p => inCatPath(p, activeSub));
+  } else if (activeCat) {
+    /* For L1-only navigation (e.g. ?cat=Gold), also match legacy products
+       whose col is one of the L2 children under that L1 in the category tree. */
+    const l1Node   = categoryTree.find(n => n.name.toLowerCase() === activeCat.toLowerCase());
+    const childCols = l1Node ? (l1Node.children ?? []).map(c => c.name.toLowerCase()) : [];
+    list = list.filter(p =>
+      inCatPath(p, activeCat) ||
+      childCols.some(cn => p.col.toLowerCase() === cn) ||
+      p.name.toLowerCase().includes(activeCat.toLowerCase())
+    );
+  }
 
   /* metal */
   if (activeMetal && activeMetal !== 'All') {
