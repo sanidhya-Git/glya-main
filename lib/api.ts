@@ -15,7 +15,7 @@ interface AdminProductRaw {
   gemType?: string;
   gemValue?: number;
   description?: string;
-  tags?: string;
+  tags?: string | string[];
   status: string;
   images?: string[];
   stock?: number;
@@ -79,8 +79,9 @@ function skuToId(sku: string): number {
   return parseInt(parts[parts.length - 1], 10) || 0;
 }
 
-function firstTag(tags?: string): string {
-  if (!tags) return '';
+function firstTag(tags?: string | string[]): string {
+  if (!tags || (Array.isArray(tags) && tags.length === 0)) return '';
+  if (Array.isArray(tags)) return tags[0]?.trim() ?? '';
   return tags.split(',')[0].trim();
 }
 
