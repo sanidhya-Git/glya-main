@@ -42,7 +42,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [size,      setSize]      = useState<string | null>(null);
   const [engraving, setEngraving] = useState('');
   const [pincode,   setPincode]   = useState('');
-  const [openAcc,   setOpenAcc]   = useState<number | null>(null);
+  const [openAcc,   setOpenAcc]   = useState<number>(0);
   const [galleryIdx,setGalleryIdx]= useState(0);
   const galleryRef = useRef<HTMLDivElement>(null);
 
@@ -73,12 +73,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const rate22 = inr(Math.round(goldRate * 0.916));
   const karats = p.metal === 'Platinum' ? ['PT950'] : p.metal === 'Silver' ? ['925'] : p.metal === 'Diamond' ? [p.karat] : (p.cat === 'Rings' || p.cat === 'Necklaces') ? ['18K','22K'] : ['22K','18K'];
 
-  const accordions = [
-    { title: 'Description',    body: p.blurb || `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS.`, html: hasHtml(p.blurb) },
-    { title: 'Specifications', body: `${p.metal} ${karat} · ${p.weightG}g · ${p.gem || 'No gemstones'}. Hallmarked by BIS. ${p.reviews > 0 ? p.reviews + ' verified reviews.' : ''}` },
-    { title: 'Certification',  body: `${p.gem ? 'IGI certified stone. ' : ''}BIS hallmarked metal. Ships with authenticity certificate and GST invoice.` },
-    { title: 'Care & shipping',body: 'Complimentary insured shipping across India. 30-day free returns. Lifetime exchange and buyback available.' },
-  ];
 
   const related = allProducts.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
 
@@ -276,23 +270,108 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             ))}
           </div>
 
-          {/* ACCORDIONS */}
-          <div style={{ marginTop:28, borderTop:'1px solid var(--line)' }}>
-            {accordions.map((a, i) => (
-              <div key={i} style={{ borderBottom:'1px solid var(--line)' }}>
-                <div onClick={() => setOpenAcc(openAcc===i?null:i)}
-                  style={{ cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'17px 0', fontFamily:"'Cormorant Garamond',serif", fontSize:21, transition:'color .15s' }}>
-                  {a.title} <span style={{ fontFamily:'Jost', fontSize:18, color:'var(--muted)' }}>{openAcc===i?'−':'+'}</span>
+        </div>
+      </div>
+
+      {/* PRODUCT DETAILS */}
+      <div style={{ marginTop:'clamp(48px,6vw,72px)' }}>
+        <style>{`
+          .pdp-tab-bar { display:flex; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+          .pdp-tab-bar::-webkit-scrollbar { display:none; }
+          .pdp-tab-btn { cursor:pointer; background:none; border:none; outline:none; font-family:'Cormorant Garamond',serif; font-size:clamp(17px,2vw,21px); padding:16px clamp(18px,2.5vw,34px); white-space:nowrap; letter-spacing:0.01em; transition:color .2s; border-bottom:2px solid transparent; margin-bottom:-1px; }
+          .pdp-tab-btn.active { color:#93733E; border-bottom-color:var(--gold); }
+          .pdp-tab-btn:not(.active) { color:var(--muted); }
+          .pdp-tab-btn:hover:not(.active) { color:var(--ink); }
+          .pdp-spec-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+          .pdp-cert-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+          .pdp-care-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+          @media(max-width:640px){ .pdp-spec-grid { grid-template-columns:repeat(2,1fr); } }
+        `}</style>
+
+        {/* Tab bar */}
+        <div className="pdp-tab-bar">
+          {['Description','Specifications','Certification','Care & Shipping'].map((tab,i) => (
+            <button key={tab} className={`pdp-tab-btn${openAcc===i?' active':''}`} onClick={() => setOpenAcc(i)}>
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div style={{ padding:'36px 0 8px', animation:'glyaFade 0.25s ease' }} key={openAcc}>
+
+          {/* 0 — Description */}
+          {openAcc === 0 && (
+            <div style={{ maxWidth:720 }}>
+              {hasHtml(p.blurb)
+                ? <div className="pdp-html" style={{ fontSize:15.5, lineHeight:1.85, color:'var(--ink2)', fontWeight:300 }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.blurb) }} />
+                : <p style={{ fontSize:15.5, lineHeight:1.85, color:'var(--ink2)', fontWeight:300, margin:0 }}>
+                    {p.blurb || `Crafted in ${p.metal} ${karat}, this piece weighs ${p.weightG}g${p.gem ? ` and features ${p.gem}` : ''}. Every piece is BIS hallmarked and ships with an authenticity certificate.`}
+                  </p>
+              }
+            </div>
+          )}
+
+          {/* 1 — Specifications */}
+          {openAcc === 1 && (
+            <div className="pdp-spec-grid">
+              {([
+                { label:'Metal',       value: p.metal },
+                { label:'Purity',      value: karat },
+                { label:'Weight',      value: `${p.weightG} g` },
+                { label:'Gemstone',    value: p.gem || 'No gemstones' },
+                { label:'Category',    value: p.cat },
+                { label:'Collection',  value: p.col },
+                ...(p.rating > 0 ? [{ label:'Rating', value: `${p.rating.toFixed(1)} / 5.0` }] : []),
+                ...(p.reviews > 0 ? [{ label:'Reviews', value: `${p.reviews} verified` }] : []),
+              ] as { label:string; value:string }[]).map(s => (
+                <div key={s.label} style={{ padding:'18px 20px', background:'var(--paper2)', border:'1px solid var(--line)', borderRadius:3 }}>
+                  <div style={{ fontSize:10.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{s.label}</div>
+                  <div style={{ fontSize:15, fontWeight:500, color:'var(--ink)', lineHeight:1.3 }}>{s.value}</div>
                 </div>
-                {openAcc===i && (
-                  a.html
-                    ? <div className="pdp-html" style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.body) }} />
-                    : <div style={{ padding:'0 0 18px', color:'var(--ink2)', fontSize:14.5, lineHeight:1.75, fontWeight:300, animation:'glyaSlideDown 0.2s ease' }}>{a.body}</div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* 2 — Certification */}
+          {openAcc === 2 && (
+            <div className="pdp-cert-grid">
+              {([
+                { icon:'◈', title:'BIS Hallmarked',         desc:'Metal purity is certified by the Bureau of Indian Standards — India\'s highest quality assurance for gold and silver.' },
+                ...(p.gem ? [{ icon:'✦', title:'IGI Certified Stone', desc:'The gemstone accompanying this piece is certified by the International Gemological Institute.' }] : []),
+                { icon:'◻', title:'GST Invoice Included',   desc:'A valid GST tax invoice is issued with every purchase for full legal compliance and resale traceability.' },
+                { icon:'◇', title:'Certificate of Authenticity', desc:'Each piece ships with a signed certificate of authenticity and a detailed product care booklet.' },
+              ] as { icon:string; title:string; desc:string }[]).map(c => (
+                <div key={c.title} style={{ padding:'26px 22px', background:'var(--paper2)', border:'1px solid var(--line)', borderRadius:3 }}>
+                  <div style={{ fontSize:28, color:'var(--gold)', marginBottom:14, lineHeight:1 }}>{c.icon}</div>
+                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:19, color:'var(--ink)', marginBottom:8, lineHeight:1.2 }}>{c.title}</div>
+                  <div style={{ fontSize:13.5, color:'var(--ink2)', lineHeight:1.7, fontWeight:300 }}>{c.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 3 — Care & Shipping */}
+          {openAcc === 3 && (
+            <div className="pdp-care-grid">
+              {([
+                { icon:'↑', title:'Free Insured Shipping',   desc:'Complimentary insured shipping across India. Orders are dispatched in 1–2 business days in tamper-evident packaging.' },
+                { icon:'↺', title:'30-Day Free Returns',     desc:'Changed your mind? Returns are accepted within 30 days of delivery — no questions asked, fully refunded.' },
+                { icon:'∞', title:'Lifetime Exchange',       desc:'Exchange your piece at the prevailing gold rate at any time. We also offer a lifetime buyback at fair market value.' },
+                { icon:'✧', title:'Care Instructions',       desc:'Store in the provided pouch away from moisture and sunlight. Polish gently with a soft cloth. Avoid harsh chemicals, perfumes, and ultrasonic cleaners.' },
+              ] as { icon:string; title:string; desc:string }[]).map(item => (
+                <div key={item.title} style={{ display:'flex', gap:18, padding:'22px 20px', background:'var(--paper2)', border:'1px solid var(--line)', borderRadius:3 }}>
+                  <div style={{ fontSize:24, color:'var(--gold)', flexShrink:0, lineHeight:1.3 }}>{item.icon}</div>
+                  <div>
+                    <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:18, color:'var(--ink)', marginBottom:6, lineHeight:1.2 }}>{item.title}</div>
+                    <div style={{ fontSize:13.5, color:'var(--ink2)', lineHeight:1.7, fontWeight:300 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 
