@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/lib/store';
@@ -29,8 +30,56 @@ function MetalRow({ eyebrow, title, href, linkLabel, items }: {
         </div>
       </Reveal>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
-        {items.map((p, i) => <Reveal key={p.id} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
+        {items.map((p, i) => <Reveal key={`${p.id}-${i}`} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
       </div>
+    </section>
+  );
+}
+
+function buildCatUrl(catPath: string[]): string {
+  const params = new URLSearchParams();
+  if (catPath[0]) params.set('cat', catPath[0]);
+  if (catPath[1]) params.set('sub', catPath[1]);
+  if (catPath[2]) params.set('type', catPath[2]);
+  return `/browse?${params.toString()}`;
+}
+
+function CategorySection({ catPath, items }: { catPath: string[]; items: StorefrontProduct[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const name   = catPath[catPath.length - 1] ?? 'Collection';
+  const parent = catPath.length > 1 ? catPath.slice(0, -1).join(' › ') : '';
+  const href   = buildCatUrl(catPath);
+  const shown  = expanded ? items : items.slice(0, 6);
+  const remaining = items.length - 6;
+
+  return (
+    <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
+      <Reveal>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+          <div>
+            {parent && <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>{parent}</p>}
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop: parent ? 4 : 0 }}>{name}</h2>
+          </div>
+          <Link href={href} style={{ fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold-d)', textDecoration:'none' }}>View all →</Link>
+        </div>
+      </Reveal>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
+        {shown.map((p, i) => <Reveal key={`${p.id}-${i}`} delay={Math.min(i, 5) * 80}><ProductCard product={p} /></Reveal>)}
+      </div>
+      {!expanded && remaining > 0 && (
+        <Reveal>
+          <div style={{ textAlign:'center', marginTop:32 }}>
+            <button
+              onClick={() => setExpanded(true)}
+              style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 28px', border:'1px solid var(--gold-d)', background:'transparent', color:'var(--gold-d)', fontSize:12, letterSpacing:'0.12em', textTransform:'uppercase', cursor:'pointer', borderRadius:2, fontFamily:'inherit', transition:'background .2s, color .2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-d)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--gold-d)'; }}
+            >
+              View more &nbsp;<span style={{ opacity:.65 }}>+{remaining}</span>
+            </button>
+          </div>
+        </Reveal>
+      )}
     </section>
   );
 }
@@ -41,17 +90,19 @@ export default function Home() {
   const adminJournal    = useStore(s => s.adminJournal);
 
   const products = adminProducts;
+
+  // Strict global dedup — every product id added here won't appear again
+  const shown = new Set<number>();
+
   const tagged   = products.filter(p => p.tag === 'Bestseller' || p.tag === 'Trending').slice(0, 8);
   const trending = tagged.length > 0 ? tagged : products.slice(0, 8);
-  const newArr   = products.filter(p => p.tag === 'New').slice(0, 4);
+  trending.forEach(p => shown.add(p.id));
 
-  /* Metal rows — prefer pieces not already shown in Trending so the page
-     doesn't repeat the same products back to back. */
-  const shown = new Set(trending.map(p => p.id));
+  const newArr = products.filter(p => p.tag === 'New' && !shown.has(p.id)).slice(0, 4);
+  newArr.forEach(p => shown.add(p.id));
+
   const pickRow = (filter: (p: StorefrontProduct) => boolean) => {
-    const all   = products.filter(filter);
-    const fresh = all.filter(p => !shown.has(p.id));
-    const row   = [...fresh, ...all.filter(p => shown.has(p.id))].slice(0, 4);
+    const row = products.filter(filter).filter(p => !shown.has(p.id)).slice(0, 4);
     row.forEach(p => shown.add(p.id));
     return row;
   };
@@ -60,6 +111,22 @@ export default function Home() {
   const diamondRow = pickRow(p => p.metal === 'Diamond' || p.gemValue > 0);
 
   const blogs = adminJournal.filter(p => p.status === 'Published').slice(0, 3);
+
+  /* Group remaining (not yet shown) products by deepest category */
+  const catSections: { catPath: string[]; items: StorefrontProduct[] }[] = [];
+  if (productsLoaded && products.length > 0) {
+    const map = new Map<string, { catPath: string[]; items: StorefrontProduct[] }>();
+    for (const p of products) {
+      if (shown.has(p.id)) continue;
+      const path = p.catPath && p.catPath.length > 0 ? p.catPath : (p.cat ? [p.cat] : []);
+      if (path.length === 0) continue;
+      const key = path.join('|');
+      if (!map.has(key)) map.set(key, { catPath: path, items: [] });
+      map.get(key)!.items.push(p);
+    }
+    const entries = Array.from(map.values()).sort((a, b) => b.items.length - a.items.length);
+    catSections.push(...entries);
+  }
 
   return (
     <>
@@ -141,7 +208,7 @@ export default function Home() {
               </div>
             </Reveal>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
-              {trending.map((p, i) => <Reveal key={p.id} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
+              {trending.map((p, i) => <Reveal key={`${p.id}-${i}`} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
             </div>
           </section>
         ) : (
@@ -169,28 +236,7 @@ export default function Home() {
         )}
 
         {/* ── EDITORIAL SPLIT ── */}
-        <section style={{ maxWidth:1180, margin:'clamp(44px,6vw,72px) auto 0', padding:'0 clamp(16px,3vw,24px)' }}>
-          <Reveal>
-          <div className="home-editorial">
-            <div className="home-editorial-img">
-              <span style={{ fontSize:80, color:'rgba(237,230,216,0.12)' }}>◈</span>
-            </div>
-            <div className="home-editorial-text">
-              <p style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)' }}>The bridal edit</p>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(22px,3vw,40px)', fontWeight:400, marginTop:12, lineHeight:1.2 }}>
-                For the most important chapter of your story
-              </h2>
-              <p style={{ color:'var(--ink2)', lineHeight:1.8, marginTop:16, fontSize:15 }}>
-                From engagement rings to trousseau sets — every piece crafted in our atelier, certified, and delivered with the GLYA guarantee.
-              </p>
-              <Link href="/browse?col=Bridal"
-                style={{ display:'inline-block', marginTop:28, padding:'12px 28px', border:'1px solid var(--ink)', fontSize:12, letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none', color:'var(--ink)', alignSelf:'flex-start' }}>
-                Explore bridal →
-              </Link>
-            </div>
-          </div>
-          </Reveal>
-        </section>
+      
 
         {/* ── NEW ARRIVALS ── */}
         {productsLoaded && newArr.length > 0 && (
@@ -205,10 +251,15 @@ export default function Home() {
               </div>
             </Reveal>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(clamp(150px,20vw,220px),1fr))', gap:'clamp(12px,2vw,22px)' }}>
-              {newArr.map((p, i) => <Reveal key={p.id} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
+              {newArr.map((p, i) => <Reveal key={`${p.id}-${i}`} delay={Math.min(i, 3) * 90}><ProductCard product={p} /></Reveal>)}
             </div>
           </section>
         )}
+
+        {/* ── BROWSE BY CATEGORY — one section per deepest-level category ── */}
+        {catSections.map(({ catPath, items }) => (
+          <CategorySection key={catPath.join('|')} catPath={catPath} items={items} />
+        ))}
 
         {/* ── ASSURANCE BAND — BIS hallmark & lifetime promise ── */}
         <section style={{ margin:'clamp(44px,6vw,72px) auto 0', background:'#2F4A3F' }}>
