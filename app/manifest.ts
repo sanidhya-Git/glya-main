@@ -22,7 +22,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screenshots/home.jpg',
         sizes: '1280x720',
         type: 'image/jpeg',
-        // @ts-expect-error — form_factor is valid but not typed in older @types/next
         form_factor: 'wide',
         label: 'GLYA Fine Jewellery — Home',
       },
