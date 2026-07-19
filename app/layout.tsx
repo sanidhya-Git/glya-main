@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 
@@ -14,6 +14,16 @@ const jost = Jost({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#B08D57" },
+    { media: "(prefers-color-scheme: dark)", color: "#B08D57" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://glya.in"),
@@ -77,6 +87,17 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://glya.in",
+  },
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+    shortcut: "/icon",
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? undefined,
   },
 };
 

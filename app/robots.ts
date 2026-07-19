@@ -6,6 +6,29 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
+        disallow: [
+          '/admin/',
+          '/api/',
+          '/checkout',
+          '/account',
+          '/cart',
+          '/wishlist',
+          '/track',
+        ],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+        disallow: ['/admin/', '/api/', '/checkout', '/account', '/cart', '/wishlist', '/track'],
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+        disallow: ['/admin/', '/api/', '/checkout', '/account', '/cart', '/wishlist', '/track'],
+      },
+      {
+        userAgent: 'Yandex',
+        allow: '/',
         disallow: ['/admin/', '/api/', '/checkout', '/account', '/cart', '/wishlist', '/track'],
       },
     ],
